@@ -7,11 +7,6 @@ from PIL import ImageChops
 from datetime import datetime
 # -*- coding: utf-8 -*-
 
-#TODO: add to a README
-#to run in terminal to print file paths with unicode characters on windows:
-# chcp 65001
-# set PYTHONIOENCODING=utf-8
-
 DUPLICATES_LONG_ARG = "--duplicates"
 DUPLICATES_SHORT_ARG = "-d"
 ORIGINALS_LONG_ARG = "--originals"
