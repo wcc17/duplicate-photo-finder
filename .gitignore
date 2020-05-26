@@ -133,3 +133,6 @@ dmypy.json
 
 # output files
 output_files/
+
+# keep my notes out of it
+NOTES
