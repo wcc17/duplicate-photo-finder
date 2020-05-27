@@ -17,9 +17,8 @@ class DuplicateProcessorFileHandler:
 
     _logger = None
 
-    def initialize(self, output_directory_path):
+    def __init__(self, output_directory_path):
         self._logger = Logger()
-
         self.__initialize_file_paths(output_directory_path)
     
     def get_files_list(self, path, folder_name): 

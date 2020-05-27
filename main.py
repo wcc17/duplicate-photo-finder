@@ -26,8 +26,9 @@ def run():
     create_output_folder()
     handle_args()
 
-    processer = DuplicateProcessor()
-    processer.execute(OUTPUT_DIRECTORY_PATH, duplicates_folder_path, originals_folder_path, rescan_for_duplicates, omit_known_duplicates)
+    process_count = 4 #TODO: should be an argument to the program
+    duplicate_processer = DuplicateProcessor(OUTPUT_DIRECTORY_PATH, duplicates_folder_path, originals_folder_path, rescan_for_duplicates, omit_known_duplicates, process_count)
+    duplicate_processer.execute()
 
 def handle_args():
     global duplicates_folder_path
