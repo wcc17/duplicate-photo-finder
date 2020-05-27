@@ -54,7 +54,7 @@ class DuplicateProcessor:
             process_list = self.__setup_and_start_processes(sub_lists, originals_folder_files_list, event_queue)
             total_to_process = len(duplicate_folder_files_list)
 
-            self.__run_processes(event_queue, total_to_process, process_list)
+            self.__run_processes(event_queue, total_to_process, process_list, sub_lists)
             self._file_handler.write_output_for_files(self._known_non_duplicates, self._known_duplicates, self._files_that_failed_to_load, self._skipped_files, self._ommitted_known_files)
 
         except KeyboardInterrupt:
@@ -68,12 +68,29 @@ class DuplicateProcessor:
             self.__kill_processes(process_list)
             raise
 
-    def __run_processes(self, event_queue, total_to_process, process_list):
+    def __setup_and_start_processes(self, sub_lists, originals_folder_files_list, event_queue):
+        process_list  =[]
+
+        process_id = 1
+        for sub_list in sub_lists:
+            sub_list = numpy.array(sub_list).tolist()
+
+            process = Process(target=self.__execute_worker, args=(sub_list, originals_folder_files_list, event_queue, process_id))
+            process.start()
+            # process.join()
+            process_list.append(process)
+            process_id += 1
+        
+        return process_list
+
+    def __run_processes(self, event_queue, total_to_process, process_list, sub_lists):
         num_processed = 0
         while(self.__some_process_is_alive(process_list)):
             num_processed = self.__handle_event(num_processed, event_queue)
-            
-            sys.stdout.write("Progress: " + str(num_processed) + "/" + str(total_to_process) + "\r")
+
+            sys.stdout.write("Overall Progress: " + str(num_processed) + "/" + str(total_to_process) + "\r")
+            # for(process in process_list):
+            #     sys.stdout.write("Process #" +)
             sys.stdout.flush()
 
     def __handle_event(self, num_processed, event_queue):
@@ -113,21 +130,6 @@ class DuplicateProcessor:
                 return True
         
         return False
-
-    def __setup_and_start_processes(self, sub_lists, originals_folder_files_list, event_queue):
-        process_list  =[]
-
-        process_id = 1
-        for sub_list in sub_lists:
-            sub_list = numpy.array(sub_list).tolist()
-
-            process = Process(target=self.__execute_worker, args=(sub_list, originals_folder_files_list, event_queue, process_id))
-            process.start()
-            # process.join()
-            process_list.append(process)
-            process_id += 1
-        
-        return process_list
 
     def __execute_worker(self, duplicate_folder_files_list, originals_folder_files_list, queue, process_id):
         duplicate_processor_worker = DuplicateProcessorWorker(self._rescan_for_duplicates, self._omit_known_duplicates, process_id, queue)

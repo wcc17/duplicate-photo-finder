@@ -11,6 +11,8 @@ class DuplicateProcessorWorker:
     _omit_known_duplicates = False
     _image_utility = None
     _queue = None
+    _total_to_process = 0
+    _process_id = 0
 
     def __init__(self, rescan_for_duplicates, omit_known_duplicates, process_id, queue):
         self._image_utility = ImageUtility()
