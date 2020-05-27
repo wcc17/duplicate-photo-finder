@@ -3,6 +3,7 @@ from duplicate_processor_worker import DuplicateProcessorWorker
 from duplicate_processor_file_handler import DuplicateProcessorFileHandler
 from logger import Logger
 from event_type import EventType
+from duplicate_processor_event_handler import DuplicateProcessorEventHandler
 import os
 import time
 import sys
@@ -18,6 +19,7 @@ class DuplicateProcessor:
     _process_count = 0
     _file_handler = None
     _logger = None
+    _event_handler = None
 
     _known_non_duplicates = []
     _known_duplicates = []
@@ -35,6 +37,7 @@ class DuplicateProcessor:
 
         self._logger = Logger()
         self._file_handler = DuplicateProcessorFileHandler(self._output_directory_path)
+        self._event_handler = DuplicateProcessorEventHandler()
 
     def execute(self):
         process_list = []
@@ -78,52 +81,22 @@ class DuplicateProcessor:
             process = Process(target=self.__execute_worker, args=(sub_list, originals_folder_files_list, event_queue, process_id))
             process.start()
             # process.join()
-            process_list.append(process)
+            process_list.insert(process_id-1, process)
             process_id += 1
         
         return process_list
 
     def __run_processes(self, event_queue, total_to_process, process_list, sub_lists):
         num_processed = 0
+        process_num_processed_list = []
+
+        #initialize num_processed_list
+        for i in range(0, len(process_list)):
+            process_num_processed_list.append(0)
+
         while(self.__some_process_is_alive(process_list)):
-            num_processed = self.__handle_event(num_processed, event_queue)
+            num_processed = self._event_handler.handle_event(event_queue.get(), process_num_processed_list, num_processed, self._known_duplicates, self._known_non_duplicates, self._skipped_files, self._ommitted_known_files, self._files_that_failed_to_load, total_to_process, sub_lists, process_list)
 
-            sys.stdout.write("Overall Progress: " + str(num_processed) + "/" + str(total_to_process) + "\r")
-            # for(process in process_list):
-            #     sys.stdout.write("Process #" +)
-            sys.stdout.flush()
-
-    def __handle_event(self, num_processed, event_queue):
-        #check the event_queue and do stuff with it
-        event = event_queue.get()
-        event_process_id = event.event_process_id
-        event_string = event.event_string
-        event_type = event.event_type
-
-        if(event_type == EventType.DUPLICATE):
-            self.__log_process_message(event_process_id, "Duplicate found: " + event_string)
-            self._known_duplicates.append(event_string)
-            num_processed += 1
-        elif event_type == EventType.NON_DUPLICATE:
-            self.__log_process_message(event_process_id, "Unique image found: " + event_string)
-            self._known_non_duplicates.append(event_string)
-            num_processed += 1
-        elif event_type == EventType.SKIPPED:
-            self.__log_process_message(event_process_id, "Skipped file: " + event_string)
-            self._skipped_files.append(event_string)
-            num_processed += 1
-        elif event_type == EventType.OMITTED_KNOWN:
-            #TODO: this would need to be propagated to all the processes to let them know that they have one less item to check photos against
-            self.__log_process_message(event_process_id, "Omitted known duplicate: " + event_string)
-            self._ommitted_known_files.append(event_string)
-            num_processed += 1
-        elif event_type == EventType.FAILED_TO_LOAD:
-            self.__log_process_message(event_process_id, "Failed to load file: " + event_string)
-            self._files_that_failed_to_load.append(event_string)
-            num_processed += 1
-        
-        return num_processed
-        
     def __some_process_is_alive(self, process_list):
         for process in process_list:
             if process.is_alive():
@@ -226,6 +199,3 @@ class DuplicateProcessor:
         for process in process_list:
             process.terminate()
         self._logger.print_log("Terminated " + str(len(process_list)) + " processes")
-
-    def __log_process_message(self, process_id, message):
-        self._logger.print_log("[process: " + str(process_id) + "] " + message)

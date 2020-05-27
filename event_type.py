@@ -6,3 +6,4 @@ class EventType(Enum):
     FAILED_TO_LOAD = 3
     SKIPPED = 4
     OMITTED_KNOWN = 5
+    NUM_PROCESSED_CHANGED = 6

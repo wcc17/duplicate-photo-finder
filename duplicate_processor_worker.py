@@ -22,26 +22,20 @@ class DuplicateProcessorWorker:
         self._queue = queue
 
     def execute(self, duplicate_folder_files_list, originals_folder_files_list):
-        # self._logger.print_log("begin processing files...")
-
-        # TODO: logger statements should be in duplicate_processor, not the worker
-        # num_processed = len(self._known_non_duplicates) + len(self._known_duplicates) + len(self._files_that_failed_to_load) + len(self._skipped_files)
+        num_processed = 0
         duplicate_folder_files_length = len(duplicate_folder_files_list)
         duplicate_folder_file_index = 0
 
         while (duplicate_folder_file_index < len(duplicate_folder_files_list)):
-            # TODO: logger statements should be in duplicate_processor, not the worker
-            # self._logger.print_log("Processed: " + str(num_processed) + "/" + str(duplicate_folder_files_length) + ", duplicates: " + str(len(self._known_duplicates)) + ", non-duplicates: " + str(len(self._known_non_duplicates)) + ", failed (not compared at all): " + str(len(self._files_that_failed_to_load)) + ", skipped (not compared at all): " + str(len(self._skipped_files)))
-            
             duplicate_folder_file = duplicate_folder_files_list[duplicate_folder_file_index]
             duplicate_folder_file_image = self._image_utility.get_valid_image(duplicate_folder_file)
 
             if(duplicate_folder_file_image == None):
-                self.__add_to_queue(EventType.SKIPPED, duplicate_folder_file)
                 duplicate_folder_file_index += 1
+                num_processed += 1
+                self.__add_to_queue(EventType.SKIPPED, duplicate_folder_file)
+                self.__add_to_queue(EventType.NUM_PROCESSED_CHANGED, num_processed)
                 continue
-
-            # self._logger.print_log("Processing: " + duplicate_folder_file)
             
             is_duplicate_of_original_folder_image = False
             original_folder_files_processed = 0
@@ -49,25 +43,22 @@ class DuplicateProcessorWorker:
                 is_duplicate_of_original_folder_image = self._image_utility.compare_image_to_file(duplicate_folder_file_image, original_folder_file)
 
                 if(is_duplicate_of_original_folder_image == True):
-                    # self._logger.print_log("Duplicate found after processing " + str(original_folder_files_processed) + " images from originals folder")
-                    self.__get_duplicates_after_rescan_for_duplicates(duplicate_folder_files_list, duplicate_folder_file_image, duplicate_folder_file)
+                    num_processed = self.__get_duplicates_after_rescan_for_duplicates(duplicate_folder_files_list, duplicate_folder_file_image, duplicate_folder_file, num_processed)
                     originals_folder_files_list = self.__handle_omit_known_duplicates(originals_folder_files_list, original_folder_file)
                     break
 
                 original_folder_files_processed += 1
-                # sys.stdout.write("Progress: " + str(original_folder_files_processed) + "/" + str(len(originals_folder_files_list)) + "\r")
-                # sys.stdout.flush()
 
             if(is_duplicate_of_original_folder_image == False):
                 self.__add_to_queue(EventType.NON_DUPLICATE, duplicate_folder_file)
             else:
                 self.__add_to_queue(EventType.DUPLICATE, duplicate_folder_file)
 
-            # TODO: should be handled in duplicate_processor
-            # num_processed += 1
+            num_processed += 1
             duplicate_folder_file_index += 1
+            self.__add_to_queue(EventType.NUM_PROCESSED_CHANGED, num_processed)
 
-    def __get_duplicates_after_rescan_for_duplicates(self, duplicate_folder_files_list, duplicate_folder_file_image, duplicate_folder_file):
+    def __get_duplicates_after_rescan_for_duplicates(self, duplicate_folder_files_list, duplicate_folder_file_image, duplicate_folder_file, num_processed):
         if self._rescan_for_duplicates == True:
             other_duplicates = []
 
@@ -82,6 +73,9 @@ class DuplicateProcessorWorker:
 
             # TODO: should be handled in duplicate_processor. also this was the wrong place to do this?????
             # num_processed += len(other_duplicates) 
+            num_processed += len(other_duplicates)
+        
+        return num_processed
 
     def __handle_omit_known_duplicates(self, originals_folder_files_list, original_folder_file):
         if self._omit_known_duplicates == True:
