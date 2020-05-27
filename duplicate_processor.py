@@ -2,7 +2,7 @@ from multiprocessing import Process, Queue
 from duplicate_processor_worker import DuplicateProcessorWorker
 from duplicate_processor_file_handler import DuplicateProcessorFileHandler
 from logger import Logger
-from queue_item_type import QueueItemType
+from event_type import EventType
 import os
 import time
 import sys
@@ -37,91 +37,107 @@ class DuplicateProcessor:
         self._file_handler = DuplicateProcessorFileHandler(self._output_directory_path)
 
     def execute(self):
+        process_list = []
+        event_queue = Queue()
+
         try:
             self._logger.print_log("backup old output files before writing output to file again...")
-            self._file_handler.backup_old_output_files()
 
             duplicate_folder_files_list = self.__get_files_list(self._duplicates_folder_path, "duplicate folder")
             originals_folder_files_list = self.__get_files_list(self._originals_folder_path, "originals folder")
             duplicate_folder_files_list = self.__handle_processed_duplicates(duplicate_folder_files_list)
             originals_folder_files_list = self.__handle_processed_originals(originals_folder_files_list)
-            self.__execute_processes(duplicate_folder_files_list, originals_folder_files_list)
 
+            self._file_handler.backup_old_output_files()
+
+            sub_lists = self.__split_list_into_n_lists(duplicate_folder_files_list, self._process_count)
+            process_list = self.__setup_and_start_processes(sub_lists, originals_folder_files_list, event_queue)
+            total_to_process = len(duplicate_folder_files_list)
+
+            self.__run_processes(event_queue, total_to_process, process_list)
             self._file_handler.write_output_for_files(self._known_non_duplicates, self._known_duplicates, self._files_that_failed_to_load, self._skipped_files, self._ommitted_known_files)
 
         except KeyboardInterrupt:
             self._logger.print_log('Interrupted, writing output to files')
             self._file_handler.write_output_for_files(self._known_non_duplicates, self._known_duplicates, self._files_that_failed_to_load, self._skipped_files, self._ommitted_known_files)
+            self.__kill_processes(process_list)
             raise
         except Exception:
             self._logger.print_log('Exception occurred, writing output to files')
             self._file_handler.write_output_for_files(self._known_non_duplicates, self._known_duplicates, self._files_that_failed_to_load, self._skipped_files, self._ommitted_known_files)
+            self.__kill_processes(process_list)
             raise
 
-    def __execute_processes(self, duplicate_folder_files_list, originals_folder_files_list):
-        queue = Queue()
-        process_list = []
-
-        #TODO: I would prefer to not use numpy like this
-        sub_lists = numpy.array_split(numpy.array(duplicate_folder_files_list), self._process_count)
-        sub_lists = numpy.array(sub_lists).tolist()
-
-        for sub_list in sub_lists:
-            sub_list = numpy.array(sub_list).tolist()
-
-            process = Process(target=self.__execute_worker, args=(sub_list, originals_folder_files_list, queue))
-            process.start()
-            # process.join()
-            process_list.append(process)
-
+    def __run_processes(self, event_queue, total_to_process, process_list):
         num_processed = 0
-        total_to_process = len(duplicate_folder_files_list)
         while(self.__some_process_is_alive(process_list)):
-            #check the queue and do stuff with it
-            queue_item = queue.get()
-            queue_item_string = queue_item.queue_item_string
-            queue_item_type = queue_item.queue_item_type
-
-            if(queue_item_type == QueueItemType.DUPLICATE):
-                self._logger.print_log("duplicate found")
-                self._known_duplicates.append(queue_item_string)
-                num_processed += 1
-            elif queue_item_type == QueueItemType.NON_DUPLICATE:
-                self._logger.print_log("Unique image found")
-                self._known_non_duplicates.append(queue_item_string)
-                num_processed += 1
-            elif queue_item_type == QueueItemType.SKIPPED:
-                self._logger.print_log("skipped a file")
-                self._skipped_files.append(queue_item_string)
-                num_processed += 1
-            elif queue_item_type == QueueItemType.OMITTED_KNOWN:
-                self._logger.print_log("omitted known")
-                #TODO: this would need to be propagated to all the processes to let them know that they have one less item to check photos against
-                self._ommitted_known_files.append(queue_item_string)
-                num_processed += 1
-            elif queue_item_type == QueueItemType.FAILED_TO_LOAD:
-                self._logger.print_log("failed to load")
-                self._files_that_failed_to_load.append(queue_item_string)
-                num_processed += 1
-            
+            num_processed = self.__handle_event(num_processed, event_queue)
             
             sys.stdout.write("Progress: " + str(num_processed) + "/" + str(total_to_process) + "\r")
             sys.stdout.flush()
 
+    def __handle_event(self, num_processed, event_queue):
+        #check the event_queue and do stuff with it
+        event = event_queue.get()
+        event_process_id = event.event_process_id
+        event_string = event.event_string
+        event_type = event.event_type
+
+        if(event_type == EventType.DUPLICATE):
+            self.__log_process_message(event_process_id, "Duplicate found: " + event_string)
+            self._known_duplicates.append(event_string)
+            num_processed += 1
+        elif event_type == EventType.NON_DUPLICATE:
+            self.__log_process_message(event_process_id, "Unique image found: " + event_string)
+            self._known_non_duplicates.append(event_string)
+            num_processed += 1
+        elif event_type == EventType.SKIPPED:
+            self.__log_process_message(event_process_id, "Skipped file: " + event_string)
+            self._skipped_files.append(event_string)
+            num_processed += 1
+        elif event_type == EventType.OMITTED_KNOWN:
+            #TODO: this would need to be propagated to all the processes to let them know that they have one less item to check photos against
+            self.__log_process_message(event_process_id, "Omitted known duplicate: " + event_string)
+            self._ommitted_known_files.append(event_string)
+            num_processed += 1
+        elif event_type == EventType.FAILED_TO_LOAD:
+            self.__log_process_message(event_process_id, "Failed to load file: " + event_string)
+            self._files_that_failed_to_load.append(event_string)
+            num_processed += 1
         
-        #TODO: need to kill the processes if something goes wrong
-
-
-    def __execute_worker(self, duplicate_folder_files_list, originals_folder_files_list, queue):
-        duplicate_processor_worker = DuplicateProcessorWorker()
-        duplicate_processor_worker.execute(self._rescan_for_duplicates, self._omit_known_duplicates, duplicate_folder_files_list, originals_folder_files_list, queue)
-
+        return num_processed
+        
     def __some_process_is_alive(self, process_list):
         for process in process_list:
             if process.is_alive():
                 return True
         
         return False
+
+    def __setup_and_start_processes(self, sub_lists, originals_folder_files_list, event_queue):
+        process_list  =[]
+
+        process_id = 1
+        for sub_list in sub_lists:
+            sub_list = numpy.array(sub_list).tolist()
+
+            process = Process(target=self.__execute_worker, args=(sub_list, originals_folder_files_list, event_queue, process_id))
+            process.start()
+            # process.join()
+            process_list.append(process)
+            process_id += 1
+        
+        return process_list
+
+    def __execute_worker(self, duplicate_folder_files_list, originals_folder_files_list, queue, process_id):
+        duplicate_processor_worker = DuplicateProcessorWorker(self._rescan_for_duplicates, self._omit_known_duplicates, process_id, queue)
+        duplicate_processor_worker.execute(duplicate_folder_files_list, originals_folder_files_list)
+
+    def __split_list_into_n_lists(self, list, number_of_lists):
+        #TODO: I would prefer to not use numpy like this
+        sub_lists = numpy.array_split(numpy.array(list), number_of_lists)
+        sub_lists = numpy.array(sub_lists).tolist()
+        return sub_lists
 
     def __get_files_list(self, path, folder_name): 
         self._logger.print_log("getting " + folder_name + " files list..") 
@@ -202,3 +218,12 @@ class DuplicateProcessor:
         except:
             self._logger.print_log("Couldn't open " + file_name + ", maybe it doesn't exist. Moving on")
             return file_list
+
+    def __kill_processes(self, process_list):
+        self._logger.print_log("Terminating all processes")
+        for process in process_list:
+            process.terminate()
+        self._logger.print_log("Terminated " + str(len(process_list)) + " processes")
+
+    def __log_process_message(self, process_id, message):
+        self._logger.print_log("[process: " + str(process_id) + "] " + message)

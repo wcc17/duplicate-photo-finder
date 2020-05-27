@@ -1,6 +1,6 @@
 from enum import Enum
 
-class QueueItemType(Enum):
+class EventType(Enum):
     DUPLICATE = 1
     NON_DUPLICATE = 2
     FAILED_TO_LOAD = 3
