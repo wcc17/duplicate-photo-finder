@@ -14,100 +14,32 @@ class DuplicateProcessorWorker:
     _total_to_process = 0
     _process_id = 0
 
-    def __init__(self, rescan_for_duplicates, omit_known_duplicates, process_id, queue):
+    def __init__(self, process_id, queue):
         self._image_utility = ImageUtility()
-        self._rescan_for_duplicates = rescan_for_duplicates
-        self._omit_known_duplicates = omit_known_duplicates
         self._process_id = process_id
         self._queue = queue
 
-    def execute(self, duplicate_folder_files_list, originals_folder_files_list):
+    def execute(self, potential_duplicate_image_models, originals_image_models):
         num_processed = 0
-        duplicate_folder_files_length = len(duplicate_folder_files_list)
-        duplicate_folder_file_index = 0
 
-        while (duplicate_folder_file_index < len(duplicate_folder_files_list)):
-            duplicate_folder_file = duplicate_folder_files_list[duplicate_folder_file_index]
-            duplicate_folder_file_image = self._image_utility.get_valid_image(duplicate_folder_file)
-
-            if(duplicate_folder_file_image == None):
-                duplicate_folder_file_index += 1
-                num_processed += 1
-                self.__add_to_queue(EventType.SKIPPED, duplicate_folder_file)
-                self.__add_to_queue(EventType.NUM_PROCESSED_CHANGED, num_processed)
-                continue
+        for potential_duplicate_image_model in potential_duplicate_image_models:
             
-            is_duplicate_of_original_folder_image = False
-            original_folder_files_processed = 0
-            for original_folder_file in originals_folder_files_list:
-                is_duplicate_of_original_folder_image = self._image_utility.compare_image_to_file(duplicate_folder_file_image, original_folder_file)
-
-                if(is_duplicate_of_original_folder_image == True):
-                    num_processed = self.__get_duplicates_after_rescan_for_duplicates(duplicate_folder_files_list, duplicate_folder_file_image, duplicate_folder_file, num_processed)
-                    originals_folder_files_list = self.__handle_omit_known_duplicates(originals_folder_files_list, original_folder_file)
+            duplicate_found = False
+            for original_image_model in originals_image_models:
+                duplicate_found = (potential_duplicate_image_model.hash == original_image_model.hash)
+                
+                if(duplicate_found == True):
                     break
 
-                original_folder_files_processed += 1
-
-            if(is_duplicate_of_original_folder_image == False):
-                self.__add_to_queue(EventType.NON_DUPLICATE, duplicate_folder_file)
+            if(duplicate_found == False):
+                self.__add_to_queue(EventType.NON_DUPLICATE, potential_duplicate_image_model)
             else:
-                self.__add_to_queue(EventType.DUPLICATE, duplicate_folder_file)
+                self.__add_to_queue(EventType.DUPLICATE, potential_duplicate_image_model)
 
             num_processed += 1
-            duplicate_folder_file_index += 1
             self.__add_to_queue(EventType.NUM_PROCESSED_CHANGED, num_processed)
-
-    def __get_duplicates_after_rescan_for_duplicates(self, duplicate_folder_files_list, duplicate_folder_file_image, duplicate_folder_file, num_processed):
-        if self._rescan_for_duplicates == True:
-            other_duplicates = []
-
-            #get any other duplicates that may exist in duplicate_folder_files_list when compared to original_folder_file
-            other_duplicates = self.__get_other_duplicates(duplicate_folder_files_list, duplicate_folder_file_image, duplicate_folder_file)
-            
-            for dup in other_duplicates:
-                #add other duplicates to skipped files so that we write down not to check them again
-                self.__add_to_queue(EventType.SKIPPED, dup)
-
-            duplicate_folder_files_list = [i for i in duplicate_folder_files_list if i not in other_duplicates]
-
-            # TODO: should be handled in duplicate_processor. also this was the wrong place to do this?????
-            # num_processed += len(other_duplicates) 
-            num_processed += len(other_duplicates)
         
-        return num_processed
+        self.__add_to_queue(EventType.PROCESS_DONE, None)
 
-    def __handle_omit_known_duplicates(self, originals_folder_files_list, original_folder_file):
-        if self._omit_known_duplicates == True:
-            # self._logger.print_log("Removing original_folder_file so we don't check again.")
-
-            #add the file to ommitted_known_files in case we have to reload
-            self.__add_to_queue(EventType.OMITTED_KNOWN, original_folder_file)
-
-            #stop looking at the original_folder_file
-            originals_folder_files_list.remove(original_folder_file)
-
-            # self._logger.print_log("New original_folder_files size: " + str(len(originals_folder_files_list)))
-            
-        return originals_folder_files_list
-
-    def __get_other_duplicates(self, duplicate_folder_files_list, duplicate_image, duplicate_image_path):
-        #if we have found a duplicate, we may have the same file multiple times in duplicate_folder_files_list
-            #find all instances of "file" in duplicate_folder_files_list
-            #delete each one
-        #after duplicate_folder_files_list no longer contains the duplicate files, theres no chance that the copy of that file in originals_folder_files_list will need to be checked again. so we can get rid of it
-        duplicates = []
-        num_processed = 0
-
-        for file_path in duplicate_folder_files_list:
-            if(self._image_utility.compare_image_to_file(duplicate_image, file_path) == True):
-                duplicates.append(file_path)
-                
-            num_processed += 1
-            # sys.stdout.write("Progress: " + str(num_processed) + "/" + str(len(duplicate_folder_files_list)) + "\r")
-            # sys.stdout.flush()
-
-        return duplicates
-
-    def __add_to_queue(self, event_type, event_string):
-        self._queue.put(Event(event_type, event_string, self._process_id))
+    def __add_to_queue(self, event_type, event_data):
+        self._queue.put(Event(event_type, event_data, self._process_id))

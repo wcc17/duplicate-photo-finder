@@ -136,3 +136,6 @@ output_files/
 
 # keep my notes out of it
 NOTES
+
+originals/
+potential_duplicates/

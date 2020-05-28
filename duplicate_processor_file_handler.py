@@ -1,105 +1,95 @@
 # -*- coding: utf-8 -*-
 import os
+import hashlib
+import sys
 from logger import Logger
+from duplicate_processor_output_file_handler import DuplicateProcessorOutputFileHandler
+from image_utility import ImageUtility
+from image_model import ImageModel
 
 class DuplicateProcessorFileHandler:
-    KNOWN_NON_DUPLICATES_FILE_NAME = "non-duplicates.txt"
-    KNOWN_DUPLICATES_FILE_NAME = "duplicates.txt"
-    FILES_THAT_FAILED_TO_LOAD_FILE_NAME = "files_that_failed_to_load.txt"
-    SKIPPED_FILES_FILE_NAME = "skipped_files.txt"
-    OMMITTED_KNOWN_FILES_FILE_NAME = "ommitted_known_files.txt"
-
-    _known_non_duplicates_file_path = None
-    _known_duplicates_file_path = None
-    _files_that_failed_to_load_file_path = None
-    _skipped_files_file_path = None
-    _ommitted_known_files_file_path = None
-
     _logger = None
+    _output_file_handler = None
+    _image_utility = None
+
+    _known_non_duplicates = []
+    _known_duplicates = []
+    _skipped_files = []
 
     def __init__(self, output_directory_path):
         self._logger = Logger()
-        self.__initialize_file_paths(output_directory_path)
+        self._output_file_handler = DuplicateProcessorOutputFileHandler(output_directory_path)
+        self._image_utility = ImageUtility()
     
-    def get_files_list(self, path, folder_name): 
+    def get_possible_duplicates_image_models(self, path, folder_name): 
+        file_list = self.__get_files_list(path, folder_name)
+        self.__handle_processed_duplicates(file_list)
+        
+        image_models = self.__get_image_models(file_list, True)
+        self._logger.print_log(folder_name + " image model count: " + str(len(file_list)))
+
+        return image_models
+
+    def get_originals_image_models(self, path, folder_name):
+        file_list = self.__get_files_list(path, folder_name)
+        image_models = self.__get_image_models(file_list, False)
+        self._logger.print_log(folder_name + " image model from count: " + str(len(file_list)))
+
+        return image_models
+
+    def get_already_processed_file_info(self):
+        return (self._known_non_duplicates, self._known_duplicates, self._skipped_files)
+
+    def backup_old_output_files(self):
+        self._output_file_handler.backup_old_output_files()
+
+    def write_output_for_files(self, known_non_duplicates, known_duplicates, skipped_files):
+        self._output_file_handler.write_output_for_files(known_non_duplicates, known_duplicates, skipped_files)
+
+    def __get_files_list(self, path, folder_name):
+        self._logger.print_log("getting " + folder_name + " files list..")
         file_list = []   
 
         #add all files to file_list                                                                                              
         for root, directories, files in os.walk(path):
             for file in files:
                 file_list.append(os.path.join(root, file))
-        
+
         return file_list
 
-    def write_output_for_files(self, known_non_duplicates, known_duplicates, files_that_failed_to_load, skipped_files, ommitted_known_files):
-        self.__write_output_for_file(self._known_non_duplicates_file_path, known_non_duplicates)
-        self.__write_output_for_file(self._known_duplicates_file_path, known_duplicates)
-        self.__write_output_for_file(self._files_that_failed_to_load_file_path, files_that_failed_to_load)
-        self.__write_output_for_file(self._skipped_files_file_path, skipped_files)
-        self.__write_output_for_file(self._ommitted_known_files_file_path, ommitted_known_files)
+    def __handle_processed_duplicates(self, potential_duplicate_folder_files_list):
+        self._logger.print_log("sort out duplicates files that have already been marked as processed...")
 
-    def backup_old_output_files(self):
-        known_non_duplicates_backup_path = self._known_non_duplicates_file_path + ".BACKUP"
-        known_duplicates_backup_path = self._known_duplicates_file_path + ".BACKUP"
-        files_that_failed_to_load_backup_path = self._files_that_failed_to_load_file_path + ".BACKUP"
-        skipped_files_backup_path = self._skipped_files_file_path + ".BACKUP"
-        ommitted_known_files_backup_path = self._ommitted_known_files_file_path + ".BACKUP"
+        self._output_file_handler.remove_already_processed_file_paths_from_list(potential_duplicate_folder_files_list, self._output_file_handler.get_known_non_duplicates_file_path(), self._known_non_duplicates)
+        self._output_file_handler.remove_already_processed_file_paths_from_list(potential_duplicate_folder_files_list, self._output_file_handler.get_known_duplicates_file_path(), self._known_duplicates)
+        self._output_file_handler.remove_already_processed_file_paths_from_list(potential_duplicate_folder_files_list, self._output_file_handler.get_skipped_files_file_path(), self._skipped_files)
 
-        self.__remove_file(known_non_duplicates_backup_path)
-        self.__remove_file(known_duplicates_backup_path)
-        self.__remove_file(files_that_failed_to_load_backup_path)
-        self.__remove_file(skipped_files_backup_path)
-        self.__remove_file(ommitted_known_files_backup_path)
+        self._logger.print_log("duplicate folder files count after scanning for already processed: " + str(len(potential_duplicate_folder_files_list)))
 
-        self.__rename_file(self._known_non_duplicates_file_path, known_non_duplicates_backup_path)
-        self.__rename_file(self._known_duplicates_file_path, known_duplicates_backup_path)
-        self.__rename_file(self._files_that_failed_to_load_file_path, files_that_failed_to_load_backup_path)
-        self.__rename_file(self._skipped_files_file_path, skipped_files_backup_path)
-        self.__rename_file(self._ommitted_known_files_file_path, ommitted_known_files_backup_path)
+    def __get_image_models(self, file_list, use_skipped_files):
+        image_models = []
+        image = None
+        num_processed = 0
+        files_removed = 0
 
-    def get_known_non_duplicate_file_path(self):
-        return self._known_non_duplicates_file_path
-    
-    def get_known_duplicate_file_path(self):
-        return self._known_duplicates_file_path
+        for filepath in file_list:
+            image = self._image_utility.get_valid_image(filepath)
 
-    def get_files_that_failed_to_load_file_path(self):
-        return self._files_that_failed_to_load_file_path
+            if(image == None):
+                if use_skipped_files:
+                    self._skipped_files.append(filepath)
+                files_removed += 1
+            else:
+                hash = hashlib.md5(image.tobytes())
+                image_model = ImageModel(filepath, hash.hexdigest())
+                image_models.append(image_model)
 
-    def get_files_skipped_file_path(self):
-        return self._skipped_files_file_path
+            num_processed += 1
 
-    def get_ommitted_known_files_file_path(self):
-        return self._ommitted_known_files_file_path
-    
-    def __initialize_file_paths(self, output_directory_path):
-        self._known_non_duplicates_file_path = os.path.join(output_directory_path, self.KNOWN_NON_DUPLICATES_FILE_NAME)
-        self._known_duplicates_file_path = os.path.join(output_directory_path, self.KNOWN_DUPLICATES_FILE_NAME)
-        self._files_that_failed_to_load_file_path = os.path.join(output_directory_path, self.FILES_THAT_FAILED_TO_LOAD_FILE_NAME)
-        self._skipped_files_file_path = os.path.join(output_directory_path, self.SKIPPED_FILES_FILE_NAME)
-        self._ommitted_known_files_file_path = os.path.join(output_directory_path, self.OMMITTED_KNOWN_FILES_FILE_NAME)
+            sys.stdout.write("Processed: " + str(num_processed) + "/" + str(len(file_list)) + " hashes " + "\r")
+            sys.stdout.flush()
 
-    def __remove_file(self, filename):
-        try:
-            os.remove(filename)
-        except:
-            self._logger.print_log("Could not remove " + filename + ", probably doesn't exist. Moving on")
-
-    def __rename_file(self, old_file_name, new_file_name):
-        try:
-            os.rename(old_file_name, new_file_name)
-        except:
-            self._logger.print_log("Could not rename " + old_file_name + ", probably doesn't exist. Moving on")
-
-    def __write_output_for_file(self, file_name, list_of_files):
-        output_file = open(file_name, 'w+')
-        for file in list_of_files:
-            output_to_write = str(file) + "\n"
-            output_file.write(output_to_write)
-
-    def __initialize_file_paths(self, output_directory_path):
-        self._known_non_duplicates_file_path = os.path.join(output_directory_path, self.KNOWN_NON_DUPLICATES_FILE_NAME)
-        self._known_duplicates_file_path = os.path.join(output_directory_path, self.KNOWN_DUPLICATES_FILE_NAME)
-        self._files_that_failed_to_load_file_path = os.path.join(output_directory_path, self.FILES_THAT_FAILED_TO_LOAD_FILE_NAME)
-        self._skipped_files_file_path = os.path.join(output_directory_path, self.SKIPPED_FILES_FILE_NAME)
-        self._ommitted_known_files_file_path = os.path.join(output_directory_path, self.OMMITTED_KNOWN_FILES_FILE_NAME)
+        if(files_removed > 0):
+            self._logger.print_log("Removed " + str(files_removed) + " files and added to skipped. They will not be processed because they can't be opened or they are not images")
+        
+        return image_models

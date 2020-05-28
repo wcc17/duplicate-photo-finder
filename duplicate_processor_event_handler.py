@@ -10,37 +10,35 @@ class DuplicateProcessorEventHandler:
     def __init__(self):
         self._logger = Logger()
     
-    def handle_event(self, event, process_num_processed_list, num_processed, known_duplicates, known_non_duplicates, skipped_files, omitted_known_files, files_that_failed_to_load, total_to_process, sub_lists, process_list):
+    def handle_event(self, event, process_num_processed_list, num_processed, known_duplicates, known_non_duplicates, skipped_files, total_to_process, sub_lists, process_list, finished_process_count):
         event_process_id = event.event_process_id
         event_data = event.event_data
         event_type = event.event_type
 
         if event_type == EventType.NUM_PROCESSED_CHANGED:
             process_num_processed_list[event_process_id-1] = event_data
+
         elif event_type == EventType.DUPLICATE:
-            self.__log_process_message(event_process_id, "Duplicate found: " + event_data)
-            known_duplicates.append(event_data)
-            num_processed += 1
-        elif event_type == EventType.NON_DUPLICATE:
-            self.__log_process_message(event_process_id, "Unique image found: " + event_data)
-            known_non_duplicates.append(event_data)
-            num_processed += 1
-        elif event_type == EventType.SKIPPED:
-            self.__log_process_message(event_process_id, "Skipped file: " + event_data)
-            skipped_files.append(event_data)
-            num_processed += 1
-        elif event_type == EventType.OMITTED_KNOWN:
-            #TODO: this would need to be propagated to all the processes to let them know that they have one less item to check photos against
-            self.__log_process_message(event_process_id, "Omitted known duplicate: " + event_data)
-            omitted_known_files.append(event_data)
-            num_processed += 1
-        elif event_type == EventType.FAILED_TO_LOAD:
-            self.__log_process_message(event_process_id, "Failed to load file: " + event_data)
-            files_that_failed_to_load.append(event_data)
+            self.__log_process_message(event_process_id, "Duplicate found: " + event_data.filepath)
+            known_duplicates.append(event_data.filepath)
             num_processed += 1
 
+        elif event_type == EventType.NON_DUPLICATE:
+            self.__log_process_message(event_process_id, "Unique image found: " + event_data.filepath)
+            known_non_duplicates.append(event_data.filepath)
+            num_processed += 1
+
+        elif event_type == EventType.SKIPPED:
+            self.__log_process_message(event_process_id, "Skipped file: " + event_data.filepath)
+            skipped_files.append(event_data.filepath)
+            num_processed += 1
+
+        elif event_type == EventType.PROCESS_DONE:
+            self.__log_process_message(event_process_id, "Finished Processing")
+            finished_process_count += 1
+
         self.__write_progress_to_console(num_processed, total_to_process, process_num_processed_list, sub_lists, process_list)
-        return num_processed
+        return (num_processed, finished_process_count)
 
     def __write_progress_to_console(self, num_processed, total_to_process, process_num_processed_list, sub_lists, process_list):
         overall_percentage_str = self.__get_progress_percentage_str(num_processed, total_to_process)
