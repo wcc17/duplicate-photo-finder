@@ -16,9 +16,8 @@ class DuplicateProcessor:
     _output_directory_path = None
     _duplicates_folder_path = None
     _originals_folder_path = None
-    _rescan_for_duplicates = False
-    _omit_known_duplicates = False
     _process_count = 0
+    _verbose_logging = False
     _file_handler = None
     _logger = None
     _processor_event_handler = None
@@ -28,11 +27,12 @@ class DuplicateProcessor:
     _known_duplicates = []
     _skipped_files = []
 
-    def __init__(self, output_directory_path, duplicates_folder_path, originals_folder_path, process_count):
+    def __init__(self, output_directory_path, duplicates_folder_path, originals_folder_path, process_count, verbose_logging):
         self._duplicates_folder_path = duplicates_folder_path
         self._originals_folder_path = originals_folder_path
         self._output_directory_path = output_directory_path
         self._process_count = process_count
+        self._verbose_logging = verbose_logging
 
         self._logger = Logger()
         self._file_handler = DuplicateProcessorFileHandler(self._output_directory_path)
@@ -45,13 +45,10 @@ class DuplicateProcessor:
         duplicate_processor_event_queue = Queue()
 
         try:
-            self._logger.print_log("backup old output files before writing output to file again...")
-
-            potential_duplicate_filepaths = self._file_handler.get_possible_duplicates_filepaths(self._duplicates_folder_path, "duplicate folder")
-            originals_folder_filepaths = self._file_handler.get_originals_filepaths(self._originals_folder_path, "originals folder")
+            potential_duplicate_filepaths = self._file_handler.get_filepaths(self._duplicates_folder_path, "duplicate folder")
+            originals_folder_filepaths = self._file_handler.get_filepaths(self._originals_folder_path, "originals folder")
             
-            self._file_handler.backup_old_output_files()
-            self.__get_already_processed_file_info()
+            self._file_handler.handle_processed_duplicates(potential_duplicate_filepaths, self._known_non_duplicates, self._known_duplicates, self._skipped_files)
 
             self._logger.print_log("hashing valid images from potential duplicates folder")
             sub_lists = self.__split_list_into_n_lists(potential_duplicate_filepaths, self._process_count)
@@ -61,7 +58,7 @@ class DuplicateProcessor:
             self._logger.print_log("hashing valid images from originals folder")
             sub_lists = self.__split_list_into_n_lists(originals_folder_filepaths, self._process_count)
             process_list = self.__setup_hash_processes(sub_lists, hash_processor_event_queue, False)
-            originals_folder_image_models = self.__run_hash_processes(hash_processor_event_queue, len(potential_duplicate_filepaths), process_list, sub_lists)
+            originals_folder_image_models = self.__run_hash_processes(hash_processor_event_queue, len(originals_folder_filepaths), process_list, sub_lists)
 
             sub_lists = self.__split_list_into_n_lists(potential_duplicate_image_models, self._process_count)
             process_list = self.__setup_processor_processes(sub_lists, originals_folder_image_models, duplicate_processor_event_queue)
@@ -114,26 +111,29 @@ class DuplicateProcessor:
         process_num_processed_list = [0] * len(process_list)
         finished_process_count = 0
 
-        for process in process_list:
-            process.start()
+        if total_to_process > already_processed:
+            for process in process_list:
+                process.start()
 
-        while True:
-            event = None
-            try:
-                event = event_queue.get(True, 1) 
-            except:
-                pass
+            while True:
+                event = None
+                try:
+                    event = event_queue.get(True, 1) 
+                except:
+                    pass
 
-            if event is not None:
-                event_return_tuple = self._processor_event_handler.handle_event(event, process_num_processed_list, num_processed, self._known_duplicates, self._known_non_duplicates, self._skipped_files, total_to_process, sub_lists, process_list, finished_process_count)
-                num_processed = event_return_tuple[0]
-                finished_process_count = event_return_tuple[1]
+                if event is not None:
+                    event_return_tuple = self._processor_event_handler.handle_event(event, process_num_processed_list, num_processed, self._known_duplicates, self._known_non_duplicates, self._skipped_files, total_to_process, sub_lists, process_list, finished_process_count)
+                    num_processed = event_return_tuple[0]
+                    finished_process_count = event_return_tuple[1]
 
-            if finished_process_count >= len(process_list):
-                break
+                if finished_process_count >= len(process_list):
+                    break
 
-        for process in process_list:
-            process.join()
+            for process in process_list:
+                process.join()
+        else:
+            self._logger.print_log("No files found to compare")
 
     def __run_hash_processes(self, event_queue, total_to_process, process_list, sub_lists):
         num_processed = 0
@@ -142,26 +142,29 @@ class DuplicateProcessor:
         finished_process_count = 0
         image_models = []
 
-        for process in process_list:
-            process.start()
+        if total_to_process > 0:
+            for process in process_list:
+                process.start()
 
-        while True:
-            event = None
-            try:
-                event = event_queue.get(True, 1) 
-            except:
-                pass
+            while True:
+                event = None
+                try:
+                    event = event_queue.get(True, 1) 
+                except:
+                    pass
 
-            if event is not None:
-                event_return_tuple = self._hash_event_handler.handle_event(event, num_processed, finished_process_count, image_models, self._skipped_files, process_num_processed_list, total_to_process, sub_lists, process_list)
-                num_processed = event_return_tuple[0]
-                finished_process_count = event_return_tuple[1]
+                if event is not None:
+                    event_return_tuple = self._hash_event_handler.handle_event(event, num_processed, finished_process_count, image_models, self._skipped_files, process_num_processed_list, total_to_process, sub_lists, process_list)
+                    num_processed = event_return_tuple[0]
+                    finished_process_count = event_return_tuple[1]
 
-            if finished_process_count >= len(process_list):
-                break
+                if finished_process_count >= len(process_list):
+                    break
 
-        for process in process_list:
-            process.join()
+            for process in process_list:
+                process.join()
+        else:
+            self._logger.print_log("No files found to hash")
 
         return image_models
 
@@ -192,9 +195,3 @@ class DuplicateProcessor:
             process.terminate()
             process.join()
         self._logger.print_log("Terminated " + str(len(process_list)) + " processes")
-
-    def __get_already_processed_file_info(self):
-        already_processed_tuple = self._file_handler.get_already_processed_file_info()
-        self._known_non_duplicates = already_processed_tuple[0] 
-        self._known_duplicates = already_processed_tuple[1] 
-        self._skipped_files = already_processed_tuple[2]

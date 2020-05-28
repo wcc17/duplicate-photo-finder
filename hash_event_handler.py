@@ -27,7 +27,6 @@ class HashEventHandler:
             #TODO: increase a "files_removed" variable and then log the results outside of this method 
 
         elif event_type == EventType.PROCESS_DONE:
-            self.__log_process_message(event_process_id, "Finished Processing")
             finished_process_count += 1
 
         self.__write_progress_to_console(num_processed, total_to_process, process_num_processed_list, sub_lists, process_list)
