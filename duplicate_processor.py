@@ -55,9 +55,11 @@ class DuplicateProcessor:
 
             sub_lists = self.__split_list_into_n_lists(duplicate_folder_files_list, self._process_count)
             process_list = self.__setup_and_start_processes(sub_lists, originals_folder_files_list, event_queue)
-            total_to_process = len(duplicate_folder_files_list)
+            
+            already_processed = len(self._known_non_duplicates) + len(self._known_duplicates) + len(self._files_that_failed_to_load) + len(self._skipped_files)
+            total_to_process = len(duplicate_folder_files_list) + already_processed
 
-            self.__run_processes(event_queue, total_to_process, process_list, sub_lists)
+            self.__run_processes(event_queue, total_to_process, already_processed, process_list, sub_lists)
             self._file_handler.write_output_for_files(self._known_non_duplicates, self._known_duplicates, self._files_that_failed_to_load, self._skipped_files, self._ommitted_known_files)
 
         except KeyboardInterrupt:
@@ -86,8 +88,8 @@ class DuplicateProcessor:
         
         return process_list
 
-    def __run_processes(self, event_queue, total_to_process, process_list, sub_lists):
-        num_processed = 0
+    def __run_processes(self, event_queue, total_to_process, already_processed, process_list, sub_lists):
+        num_processed = already_processed
         process_num_processed_list = []
 
         #initialize num_processed_list
@@ -96,7 +98,7 @@ class DuplicateProcessor:
 
         while(self.__some_process_is_alive(process_list)):
             num_processed = self._event_handler.handle_event(event_queue.get(), process_num_processed_list, num_processed, self._known_duplicates, self._known_non_duplicates, self._skipped_files, self._ommitted_known_files, self._files_that_failed_to_load, total_to_process, sub_lists, process_list)
-
+            
     def __some_process_is_alive(self, process_list):
         for process in process_list:
             if process.is_alive():

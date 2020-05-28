@@ -10,7 +10,6 @@ class DuplicateProcessorEventHandler:
     def __init__(self):
         self._logger = Logger()
     
-    #TODO: verify that the known_duplicates, etc. lists are being modified correctly when this method ends. including process_num_processed_list
     def handle_event(self, event, process_num_processed_list, num_processed, known_duplicates, known_non_duplicates, skipped_files, omitted_known_files, files_that_failed_to_load, total_to_process, sub_lists, process_list):
         event_process_id = event.event_process_id
         event_data = event.event_data
@@ -50,7 +49,7 @@ class DuplicateProcessorEventHandler:
         for i in range(0, len(process_num_processed_list)):
             percentage_str = self.__get_progress_percentage_str(process_num_processed_list[i], len(sub_lists[i]))
             is_running_str = "Running" if self.__is_process_running(process_list[i]) else "Stopped"
-            output_str += ",    Process (" + is_running_str + ")" + str(i+1) + ": " + str(process_num_processed_list[i]) + "/" + str(len(sub_lists[i]))  + " " + percentage_str + "%"
+            output_str += ",    Process " + str(i+1) + "(" + is_running_str + ")" + ": " + str(process_num_processed_list[i]) + "/" + str(len(sub_lists[i]))  + " " + percentage_str + "%"
 
         sys.stdout.write(output_str + "\r")
         sys.stdout.flush()
