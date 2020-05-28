@@ -20,7 +20,6 @@ class DuplicateProcessorWorker:
         self._queue = queue
 
     def execute(self, potential_duplicate_image_models, originals_image_models):
-        num_processed = 0
 
         for potential_duplicate_image_model in potential_duplicate_image_models:
             
@@ -35,9 +34,6 @@ class DuplicateProcessorWorker:
                 self.__add_to_queue(EventType.NON_DUPLICATE, potential_duplicate_image_model)
             else:
                 self.__add_to_queue(EventType.DUPLICATE, potential_duplicate_image_model)
-
-            num_processed += 1
-            self.__add_to_queue(EventType.NUM_PROCESSED_CHANGED, num_processed)
         
         self.__add_to_queue(EventType.PROCESS_DONE, None)
 

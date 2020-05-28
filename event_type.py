@@ -5,5 +5,6 @@ class EventType(Enum):
     NON_DUPLICATE = 2
     FAILED_TO_LOAD = 3
     SKIPPED = 4
-    NUM_PROCESSED_CHANGED = 5
-    PROCESS_DONE = 6
+    PROCESS_DONE = 5
+    FILE_HASHED = 6
+    SKIPPED_FILE_HASH = 7
