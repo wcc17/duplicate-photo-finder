@@ -33,10 +33,6 @@ class HashWorker:
                 except:
                     self.__add_to_queue(EventType.SKIPPED_FILE_HASH, filepath)
 
-        # TODO: would like to cover this somewhere else 
-        # if(files_removed > 0):
-        #     self._logger.print_log("Removed " + str(files_removed) + " files and added to skipped. They will not be processed because they can't be opened or they are not images")
-
         self.__add_to_queue(EventType.PROCESS_DONE, None)
 
     def __add_to_queue(self, event_type, event_data):

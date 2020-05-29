@@ -10,7 +10,7 @@ class DuplicateProcessorEventHandler:
     def __init__(self):
         self._logger = Logger()
     
-    def handle_event(self, event, process_num_processed_list, num_processed, known_duplicates, known_non_duplicates, skipped_files, total_to_process, sub_lists, process_list, finished_process_count):
+    def handle_event(self, sub_lists, known_duplicates, known_non_duplicates, skipped_files, event, num_processed, process_num_processed_list, finished_process_count, total_to_process, process_list):
         event_process_id = event.event_process_id
         event_data = event.event_data
         event_type = event.event_type

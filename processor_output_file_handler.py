@@ -1,7 +1,7 @@
 import os
 from logger import Logger
 
-class DuplicateProcessorOutputFileHandler:
+class ProcessorOutputFileHandler:
 
     _logger = None
 

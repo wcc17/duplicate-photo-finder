@@ -10,7 +10,7 @@ class HashEventHandler:
     def __init__(self):
         self._logger = Logger()
 
-    def handle_event(self, event, num_processed, finished_process_count, image_models, skipped_files, process_num_processed_list, total_to_process, sub_lists, process_list):
+    def handle_event(self, image_models, skipped_files, sub_lists, event, num_processed, process_num_processed_list, finished_process_count, total_to_process, process_list):
         event_process_id = event.event_process_id
         event_data = event.event_data
         event_type = event.event_type
