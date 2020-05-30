@@ -20,12 +20,13 @@ class HashProcessor(BaseProcessor):
         if process_existing_duplicates:
             self.__process_existing_duplicates(filepaths, known_non_duplicates, known_duplicates, skipped_files)
 
-        self._logger.print_log("hashing valid images from " + folder_name)
+        self._logger.print_log("hashing valid media files from " + folder_name)
         sub_lists = self._split_list_into_n_lists(filepaths, process_count)
         
         self._setup_processes(self.__execute_hash_worker, None, sub_lists)
         self._run_processes(len(filepaths), self._hash_event_handler.handle_event, (image_models, skipped_files, sub_lists, append_to_skipped))
 
+        self._logger.print_log("hashed " + len(image_models) + " media files and skipped: " + len(skipped_files))
         return image_models
 
     def __process_existing_duplicates(self, filepaths, known_non_duplicates, known_duplicates, skipped_files):

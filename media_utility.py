@@ -69,14 +69,16 @@ class MediaUtility:
         # couldn't really find a good way to use ffmpeg python bindings, had to resort to using ffmpeg in subprocess
         # ffmpeg -loglevel error -i 0329140058.mp4 -f md5 -
         # 'MD5=0d67be762adf54a8b690f62d293f017b'
-        command_str = 'ffmpeg -loglevel error -i ' + filepath + ' -f md5 -'
+        command_str = 'ffmpeg -loglevel error -i \"' + filepath + '\" -f md5 -'
         process = subprocess.Popen([command_str], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = process.communicate()
 
-        hash = str(stdout)                  # "'bMD5=0d67be762adf54a8b690f62d293f017b\\n'"
-        hash = hash.split("=")[1]           # "ded0a1af9310f7645cd3fdb447b4ec23\\n'"
-        hash = hash.replace("\\n'", "")     # 'ded0a1af9310f7645cd3fdb447b4ec23'
-
+        hash = None
+        if process.returncode == 0:
+            hash = str(stdout)                  # "'bMD5=0d67be762adf54a8b690f62d293f017b\\n'"
+            hash = hash.split("=")[1]           # "ded0a1af9310f7645cd3fdb447b4ec23\\n'"
+            hash = hash.replace("\\n'", "")     # 'ded0a1af9310f7645cd3fdb447b4ec23'
+        
         return hash
 
     def __get_image_hash(self, image):
