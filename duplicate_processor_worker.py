@@ -20,23 +20,33 @@ class DuplicateProcessorWorker:
     def execute(self, potential_duplicate_image_models, originals_image_models):
 
         for potential_duplicate_image_model in potential_duplicate_image_models:
-            
-            duplicate_found = False
-            for original_image_model in originals_image_models:
-
-                if potential_duplicate_image_model.hash == original_image_model.hash:
-                    if not potential_duplicate_image_model.filepath == original_image_model.filepath:
-                        duplicate_found = True
-                
-                if(duplicate_found == True):
-                    break
-
-            if(duplicate_found == False):
-                self.__add_to_queue(EventType.NON_DUPLICATE, potential_duplicate_image_model)
-            else:
-                self.__add_to_queue(EventType.DUPLICATE, DuplicateResultModel(potential_duplicate_image_model.filepath, original_image_model.filepath))
+            matching_originals_model = self.__compare_model_to_originals(potential_duplicate_image_model, originals_image_models)
+            self.__handle_comparison_result(potential_duplicate_image_model, matching_originals_model)
         
         self.__add_to_queue(EventType.PROCESS_DONE, None)
+
+    def __compare_model_to_originals(self, image_model, originals_image_models):
+        matching_originals_model = None
+        for original_image_model in originals_image_models:
+            
+            if self.__compare_models(image_model, original_image_model) == True:
+                matching_originals_model = original_image_model
+                break
+
+        return matching_originals_model
+
+    def __compare_models(self, image_model1, image_model2):
+        if image_model1.hash == image_model2.hash:
+            if not image_model1.filepath == image_model2.filepath:
+                return True
+
+        return False
+
+    def __handle_comparison_result(self, potential_duplicate_image_model, matching_originals_model):
+        if(matching_originals_model is None):
+            self.__add_to_queue(EventType.NON_DUPLICATE, potential_duplicate_image_model)
+        else:
+            self.__add_to_queue(EventType.DUPLICATE, DuplicateResultModel(potential_duplicate_image_model.filepath, matching_originals_model.filepath))
 
     def __add_to_queue(self, event_type, event_data):
         self._queue.put(Event(event_type, event_data, self._process_id))

@@ -19,7 +19,6 @@ class BaseProcessor:
         self.__kill_processes(self._process_list)
 
     def _split_list_into_n_lists(self, list, number_of_lists):
-        #TODO: I would prefer to not use numpy for this if possible
         sub_lists = numpy.array_split(numpy.array(list), number_of_lists)
         sub_lists = numpy.array(sub_lists).tolist()
         return sub_lists

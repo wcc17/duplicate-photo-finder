@@ -6,7 +6,7 @@ Python script that compares one set of photos to another to identify duplicates.
  - Generates md5 hashes associated to filepaths for each file in folders designated by user.
  - Compares hashes to identify exact duplicates only 
  - Writes the outputs (filepaths of the duplicates, non duplicates, and skipped files) to a text file so that you can handle the duplicates how you want to (instead of relying on another program to do it)
- - Can utilize output files to resume a scan if errors are encountered or if the program has to be stopped (see note on output_files, not guarenteed)
+ - Experimental: Can utilize output files to resume a scan if errors are encountered or if the program has to be stopped (see note on output_files, not guarenteed)
 
  - Hashes for images are calculated by getting image bytes from PIL and using hashlib to calculate the hash
  - Hashes for videos are calculated by running the following command with ffmpeg. It converts video and audio to raw video and audio frames and then calculates md5 hash based on those:  
