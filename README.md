@@ -38,19 +38,21 @@ Python script that compares one set of photos to another to identify duplicates.
 ### output:
 The program should not modify any media files, only the "output_files" directory that will be created in the directory main.py is run in
 
-Up to six files will be created. Original filenames will be written to the files so that you can process them after the run however you want  
+Up to six files will be created. Original filenames will be written to the files so that you can process them after the run however you want:  
+
+
 ```output_folder/duplicates.txt```:  
 For each media file in the "duplicates" folder whose md5 hash matches a file's md5 hash in the "originals" folder OR for each media file in the "duplicates" folder whose md5 matches another file in the "duplicates" folder, the following will be written:  
  - ```duplicates/duplicate1.png, originals/duplicate1.png```  
- 
+   
 ```output_folder/non-duplicates.txt```:  
 For each media file in the "duplicates" folder whose md5 hash doesn't match another's in the "originals" folder OR for each media file in "duplicates" folder whose md5 doesn't match another's in the "duplicates" folder, the following will be written:  
- - ```duplicates/non-duplicate.png```  
- 
+ - ```duplicates/non-duplicate.png```   
+   
  ```output_folder/skipped_files.txt```:  
 For each file in the "duplicates" folder that the program could not get an md5 hash for, the following will be written. It is possible for files to be skipped in the 'originals' folder as well, but these aren't written to this file:
- ```duplicates/skipped_files.txt```
-
+ ```duplicates/skipped_files.txt```  
+  
 If these three files already exist in output_files, backups will be created of them before overwriting them in a subsequent run. These will be named:  
 ```output_folder/duplicates.txt.BACKUP```  
 ```output_folder/non-duplicates.txt.BACKUP```  
