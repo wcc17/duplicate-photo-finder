@@ -15,8 +15,8 @@ Python script that compares one set of photos to another to identify duplicates.
 (Let me know if you have a faster way to do this ^)
 
 
-Only exact copies (aside from file metadata) are calculated as duplicates
-**No actions are taken to minimize memory usage, so keep that in mind if processing large videos
+ - Only exact copies (aside from file metadata) are calculated as duplicates
+ - **No actions are taken to minimize memory usage, so keep that in mind if processing large videos
 
 ### prerequisites:
  - ```sudo apt-get install ffmpeg```
@@ -49,7 +49,7 @@ Up to six files will be created. Original filenames will be written to the files
  - For each file in the "duplicates" folder that the program could not get an md5 hash for, the following will be written. It is possible for files to be skipped in the 'originals' folder as well, but these aren't written to this file:
  ```duplicates/skipped_files.txt```
 
-If these three files already exist in output_files, backups will be created of them before overwriting them in a subsequent run. These will be named:
+If these three files already exist in output_files, backups will be created of them before overwriting them in a subsequent run. These will be named:  
 ```output_folder/duplicates.txt.BACKUP```
 ```output_folder/non-duplicates.txt.BACKUP```
 ```output_folder/skipped_files.txt.BACKUP```
