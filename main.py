@@ -22,10 +22,14 @@ def run():
     handle_args()
 
     process_count = 4 #TODO: should be an argument to the program
-    verbose = True #TODO: should be an argument to the program
+    use_verbose_logging = False #TODO: should be an argument to the program
 
-    duplicate_finder = DuplicateFinder(OUTPUT_DIRECTORY_PATH, process_count)
-    duplicate_finder.execute(duplicates_folder_path, originals_folder_path)
+    single_folder_dupe_search = False
+    if(originals_folder_path == None):
+        single_folder_dupe_search = True
+
+    duplicate_finder = DuplicateFinder(OUTPUT_DIRECTORY_PATH, use_verbose_logging)
+    duplicate_finder.execute(duplicates_folder_path, originals_folder_path, process_count, single_folder_dupe_search)
 
 def handle_args():
     global duplicates_folder_path
@@ -45,13 +49,14 @@ def handle_args():
         elif opt in (ORIGINALS_LONG_ARG, ORIGINALS_SHORT_ARG):
             originals_folder_path = arg
 
-    if originals_folder_path == None or duplicates_folder_path == None:
-        print("Must provide two folders. Exiting")
+    if duplicates_folder_path == None:
+        print("Must provide at least one folder. Exiting")
         sys.exit(2)
 
 def usage():
     print("usage: sudo python main.py [-d --duplicates] [-o --originals] [-r --rescan] [-O --omitknown] [-h --help]")
-    print("     duplicates: the top level directory containing all photos that are possible duplicates of photos located in the master folder")
+    print("     duplicates: the top level directory containing all photos that are possible duplicates of photos located in the originals folder")
+    print("         -to identify duplicates in the same directory, don't use the \"originals\" argument")
     print("     originals: the top level directory containing all photos that are \"master\" copies (you don't want to delete these)")
     print("     help: see this message")
 

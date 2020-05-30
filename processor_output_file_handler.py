@@ -72,13 +72,15 @@ class ProcessorOutputFileHandler:
         try:
             os.remove(filename)
         except:
-            self._logger.print_log("Could not remove " + filename + ", probably doesn't exist. Moving on")
+            #self._logger.print_log("Could not remove " + filename + ", probably doesn't exist. Moving on")
+            pass
 
     def __rename_file(self, old_file_name, new_file_name):
         try:
             os.rename(old_file_name, new_file_name)
         except:
-            self._logger.print_log("Could not rename " + old_file_name + ", probably doesn't exist. Moving on")
+            #self._logger.print_log("Could not rename " + old_file_name + ", probably doesn't exist. Moving on")
+            pass
 
     def __write_output_for_file(self, file_name, list_of_files):
         output_file = open(file_name, 'w+')

@@ -7,7 +7,6 @@ class DuplicateFinder:
 
     _logger = None
     _file_handler = None
-    _process_count = 0
 
     _hash_processor = None
     _duplicate_processor = None
@@ -16,20 +15,25 @@ class DuplicateFinder:
     _known_duplicates = []
     _skipped_files = []
 
-    def __init__(self, output_file_path, process_count):
-        self._process_count = process_count
+    def __init__(self, output_file_path, use_verbose_logging):
         self._file_handler = ProcessorFileHandler(output_file_path)
 
         self._logger = Logger()
-        self._hash_processor = HashProcessor(self._file_handler)
-        self._duplicate_processor = DuplicateProcessor(self._file_handler)
+        self._hash_processor = HashProcessor(self._file_handler, use_verbose_logging)
+        self._duplicate_processor = DuplicateProcessor(self._file_handler, use_verbose_logging)
 
-    def execute(self, duplicates_folder_path, originals_folder_path):
+    def execute(self, duplicates_folder_path, originals_folder_path, process_count, single_folder_dupe_search):
         try:
-            potential_duplicate_image_models = self._hash_processor.process(self._process_count, duplicates_folder_path, "duplicates folder", self._known_non_duplicates, self._known_duplicates, self._skipped_files, True, True)
-            originals_folder_image_models = self._hash_processor.process(self._process_count, originals_folder_path, "originals folder", self._known_non_duplicates, self._known_duplicates, self._skipped_files, False, False)
+            potential_duplicate_image_models = []
+            originals_folder_image_models = []
 
-            self._duplicate_processor.process(self._process_count, potential_duplicate_image_models, originals_folder_image_models, self._known_non_duplicates, self._known_duplicates, self._skipped_files)
+            potential_duplicate_image_models = self._hash_processor.process(process_count, duplicates_folder_path, "duplicates folder", self._known_non_duplicates, self._known_duplicates, self._skipped_files, True, True)
+            if(not single_folder_dupe_search):
+                originals_folder_image_models = self._hash_processor.process(process_count, originals_folder_path, "originals folder", self._known_non_duplicates, self._known_duplicates, self._skipped_files, False, False)
+            else:
+                originals_folder_image_models = potential_duplicate_image_models
+
+            self._duplicate_processor.process(process_count, potential_duplicate_image_models, originals_folder_image_models, self._known_non_duplicates, self._known_duplicates, self._skipped_files, single_folder_dupe_search)
 
         except KeyboardInterrupt:
             self._logger.print_log('Interrupted, writing output to files')

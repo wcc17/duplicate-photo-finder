@@ -7,9 +7,9 @@ class HashProcessor(BaseProcessor):
 
     _hash_event_handler = None
 
-    def __init__(self, file_handler):
+    def __init__(self, file_handler, use_verbose_logging):
         super().__init__(file_handler)
-        self._hash_event_handler = HashEventHandler()
+        self._hash_event_handler = HashEventHandler(use_verbose_logging)
 
     def process(self, process_count, folder_path, folder_name, known_non_duplicates, known_duplicates, skipped_files, process_duplicates, append_to_skipped):
         self._process_list = []
@@ -33,6 +33,6 @@ class HashProcessor(BaseProcessor):
         self._file_handler.handle_processed_duplicates(filepaths, known_non_duplicates, known_duplicates, skipped_files)
         self._logger.print_log("duplicate folder files count after scanning for already processed: " + str(len(filepaths)))
 
-    def __execute_hash_worker(self, append_to_skipped, image_paths, process_id, queue):
+    def __execute_hash_worker(self, process_id, queue, append_to_skipped, image_paths):
         hash_worker = HashWorker(process_id, queue)
         hash_worker.execute(image_paths, append_to_skipped)

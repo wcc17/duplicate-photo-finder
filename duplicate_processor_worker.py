@@ -5,6 +5,7 @@ from logger import Logger
 from image_utility import ImageUtility
 from event import Event
 from event_type import EventType
+from duplicate_result_model import DuplicateResultModel
 
 class DuplicateProcessorWorker:
     _rescan_for_duplicates = False
@@ -25,7 +26,10 @@ class DuplicateProcessorWorker:
             
             duplicate_found = False
             for original_image_model in originals_image_models:
-                duplicate_found = (potential_duplicate_image_model.hash == original_image_model.hash)
+
+                if potential_duplicate_image_model.hash == original_image_model.hash:
+                    if not potential_duplicate_image_model.filepath == original_image_model.filepath:
+                        duplicate_found = True
                 
                 if(duplicate_found == True):
                     break
@@ -33,7 +37,7 @@ class DuplicateProcessorWorker:
             if(duplicate_found == False):
                 self.__add_to_queue(EventType.NON_DUPLICATE, potential_duplicate_image_model)
             else:
-                self.__add_to_queue(EventType.DUPLICATE, potential_duplicate_image_model)
+                self.__add_to_queue(EventType.DUPLICATE, DuplicateResultModel(potential_duplicate_image_model.filepath, original_image_model.filepath))
         
         self.__add_to_queue(EventType.PROCESS_DONE, None)
 

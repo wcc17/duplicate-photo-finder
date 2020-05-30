@@ -27,13 +27,14 @@ class BaseProcessor:
     def _setup_processes(self, target_func, execution_args, sub_lists):
         process_id = 1
         for sub_list in sub_lists:
-            args_to_use = execution_args
+            args_to_use = (process_id, self._event_queue) # TODO: this is a hack and wouldn't be necessary if workers subclassed Process
             if isinstance(execution_args, tuple):
-                args_to_use += (process_id, self._event_queue) # TODO: this is a hack and wouldn't be necessary if workers subclassed Process
+                args_to_use += execution_args
             else:
-                args_to_use = (args_to_use, sub_list, process_id, self._event_queue)
+                args_to_use += (execution_args,)
 
-            #TODO: apply the default args "first" then apply the processor specific args second. doing it backwards here
+            args_to_use += (sub_list,)
+
             process = Process(target=target_func, args=args_to_use)
             self._process_list.insert(process_id-1, process)
             process_id += 1
@@ -63,9 +64,11 @@ class BaseProcessor:
                 pass
 
             if event is not None:
-                #TODO: apply the default args "first" then apply the processor specific args second. doing it backwards here
-                args_to_use = event_handler_args #TODO: i want to stop doing this with the arguments its awful
-                args_to_use += (event, num_processed, process_num_processed_list, finished_process_count, total_to_process, self._process_list)
+                #TODO: i want to stop doing this with the arguments its awful
+                args_to_use = (event, num_processed, process_num_processed_list, finished_process_count, total_to_process, self._process_list)
+                args_to_use += event_handler_args
+
+
                 event_return_tuple = event_handler_func(*args_to_use)
 
                 num_processed = event_return_tuple[0]
