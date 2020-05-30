@@ -11,28 +11,28 @@ class HashProcessor(BaseProcessor):
         super().__init__(file_handler)
         self._hash_event_handler = HashEventHandler(use_verbose_logging)
 
-    def process(self, process_count, folder_path, folder_name, known_non_duplicates, known_duplicates, skipped_files, process_duplicates, append_to_skipped):
+    def process(self, process_count, folder_path, folder_name, known_non_duplicates, known_duplicates, skipped_files, process_existing_duplicates, append_to_skipped):
         self._process_list = []
         image_models = []
 
         filepaths = self._file_handler.get_filepaths(folder_path, folder_name)
         
-        if process_duplicates:
-            self.__process_duplicates(filepaths, known_non_duplicates, known_duplicates, skipped_files)
+        if process_existing_duplicates:
+            self.__process_existing_duplicates(filepaths, known_non_duplicates, known_duplicates, skipped_files)
 
         self._logger.print_log("hashing valid images from " + folder_name)
         sub_lists = self._split_list_into_n_lists(filepaths, process_count)
         
-        self._setup_processes(self.__execute_hash_worker, append_to_skipped, sub_lists)
-        self._run_processes(len(filepaths), self._hash_event_handler.handle_event, (image_models, skipped_files, sub_lists))
+        self._setup_processes(self.__execute_hash_worker, None, sub_lists)
+        self._run_processes(len(filepaths), self._hash_event_handler.handle_event, (image_models, skipped_files, sub_lists, append_to_skipped))
 
         return image_models
 
-    def __process_duplicates(self, filepaths, known_non_duplicates, known_duplicates, skipped_files):
+    def __process_existing_duplicates(self, filepaths, known_non_duplicates, known_duplicates, skipped_files):
         self._logger.print_log("sort out duplicates files that have already been marked as processed...")
         self._file_handler.handle_processed_duplicates(filepaths, known_non_duplicates, known_duplicates, skipped_files)
         self._logger.print_log("duplicate folder files count after scanning for already processed: " + str(len(filepaths)))
 
-    def __execute_hash_worker(self, process_id, queue, append_to_skipped, image_paths):
+    def __execute_hash_worker(self, process_id, queue, image_paths):
         hash_worker = HashWorker(process_id, queue)
-        hash_worker.execute(image_paths, append_to_skipped)
+        hash_worker.execute(image_paths)

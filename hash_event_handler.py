@@ -9,7 +9,7 @@ class HashEventHandler(EventHandler):
     def __init__(self, use_verbose_logging):
         super().__init__(use_verbose_logging)
 
-    def handle_event(self, event, num_processed, process_num_processed_list, finished_process_count, total_to_process, process_list, image_models, skipped_files, sub_lists):
+    def handle_event(self, event, num_processed, process_num_processed_list, finished_process_count, total_to_process, process_list, image_models, skipped_files, sub_lists, append_to_be_skipped):
         event_process_id = event.event_process_id
         event_data = event.event_data
         event_type = event.event_type
@@ -20,7 +20,9 @@ class HashEventHandler(EventHandler):
             num_processed += 1
 
         elif event_type == EventType.SKIPPED_FILE_HASH:
-            skipped_files.append(event_data)
+            if append_to_be_skipped == True:
+                #we want to skip any file that doesn't load properly, but we only want to write skipped_files from the "duplicates" directory to skipped_files.txt
+                skipped_files.append(event_data)
             process_num_processed_list[event_process_id-1] += 1
             num_processed += 1
             #TODO: increase a "files_removed" variable and then log the results outside of this method 

@@ -24,14 +24,16 @@ class BaseProcessor:
         sub_lists = numpy.array(sub_lists).tolist()
         return sub_lists
 
-    def _setup_processes(self, target_func, execution_args, sub_lists):
+    def _setup_processes(self, target_func, additional_execution_args, sub_lists):
         process_id = 1
         for sub_list in sub_lists:
             args_to_use = (process_id, self._event_queue) # TODO: this is a hack and wouldn't be necessary if workers subclassed Process
-            if isinstance(execution_args, tuple):
-                args_to_use += execution_args
-            else:
-                args_to_use += (execution_args,)
+
+            if not additional_execution_args == None:
+                if isinstance(additional_execution_args, tuple):
+                    args_to_use += additional_execution_args
+                else:
+                    args_to_use += (additional_execution_args,)
 
             args_to_use += (sub_list,)
 

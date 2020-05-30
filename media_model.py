@@ -1,4 +1,4 @@
-class ImageModel:
+class MediaModel:
 
     filepath = None
     hash = None

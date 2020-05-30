@@ -2,7 +2,6 @@
 import os
 import sys
 from logger import Logger
-from image_utility import ImageUtility
 from event import Event
 from event_type import EventType
 from duplicate_result_model import DuplicateResultModel
@@ -10,13 +9,11 @@ from duplicate_result_model import DuplicateResultModel
 class DuplicateProcessorWorker:
     _rescan_for_duplicates = False
     _omit_known_duplicates = False
-    _image_utility = None
     _queue = None
     _total_to_process = 0
     _process_id = 0
 
     def __init__(self, process_id, queue):
-        self._image_utility = ImageUtility()
         self._process_id = process_id
         self._queue = queue
 

@@ -2,7 +2,6 @@
 import os
 import sys
 from logger import Logger
-from image_model import ImageModel
 from processor_output_file_handler import ProcessorOutputFileHandler
 
 class ProcessorFileHandler:

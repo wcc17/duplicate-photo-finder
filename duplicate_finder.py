@@ -22,12 +22,15 @@ class DuplicateFinder:
         self._hash_processor = HashProcessor(self._file_handler, use_verbose_logging)
         self._duplicate_processor = DuplicateProcessor(self._file_handler, use_verbose_logging)
 
-    def execute(self, duplicates_folder_path, originals_folder_path, process_count, single_folder_dupe_search):
+    def execute(self, duplicates_folder_path, originals_folder_path, process_count, single_folder_dupe_search, use_verbose_logging, should_scan_videos):
+        
+        #TODO: not doing anything yet with use_verbose_logging and should_scan_videos
         try:
             potential_duplicate_image_models = []
             originals_folder_image_models = []
 
             potential_duplicate_image_models = self._hash_processor.process(process_count, duplicates_folder_path, "duplicates folder", self._known_non_duplicates, self._known_duplicates, self._skipped_files, True, True)
+            
             if(not single_folder_dupe_search):
                 originals_folder_image_models = self._hash_processor.process(process_count, originals_folder_path, "originals folder", self._known_non_duplicates, self._known_duplicates, self._skipped_files, False, False)
             else:

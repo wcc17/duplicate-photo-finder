@@ -141,3 +141,6 @@ originals/
 potential_duplicates/
 potential_duplicates2/
 runs.txt
+video_duplicates/
+video_originals/
+test/
