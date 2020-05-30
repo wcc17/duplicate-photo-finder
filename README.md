@@ -1,25 +1,22 @@
 # duplicate-photo-finder
 Python script that compares one set of photos to another to identify duplicates. 
 
-Utilizes multiprocessing (default process count is 3) that can be customized by user. 
-Generates md5 hashes associated to filepaths for each file in folders designated by user.
-Compares hashes to identify exact duplicates only 
-Writes the outputs (filepaths of the duplicates, non duplicates, and skipped files) to a text file so that you can handle the duplicates how you want to (instead of relying on another program to do it)
+ - Utilizes multiprocessing (default process count is 3) that can be customized by user.   
+ 
+ - Generates md5 hashes associated to filepaths for each file in folders designated by user.
+ - Compares hashes to identify exact duplicates only 
+ - Writes the outputs (filepaths of the duplicates, non duplicates, and skipped files) to a text file so that you can handle the duplicates how you want to (instead of relying on another program to do it)
+ - Can utilize output files to resume a scan if errors are encountered or if the program has to be stopped (see note on output_files)
 
-Hashes for images are calculated by getting image bytes from PIL and using hashlib to calculate the hash
-Hashes for videos are calculated by running the following command with ffmpeg. It converts video and audio to raw video and audio frames and then calculates md5 hash based on those:
+ - Hashes for images are calculated by getting image bytes from PIL and using hashlib to calculate the hash
+ - Hashes for videos are calculated by running the following command with ffmpeg. It converts video and audio to raw video and audio frames and then calculates md5 hash based on those:  
     ```ffmpeg -loglevel error -i 0329140058.mp4 -f md5 -```
-    ```http://ffmpeg.org/ffmpeg-all.html#hash```
-Let me know if you have a faster way to do this ^
+    ```http://ffmpeg.org/ffmpeg-all.html#hash```  
+(Let me know if you have a faster way to do this ^)
 
 
 Only exact copies (aside from file metadata) are calculated as duplicates
 **No actions are taken to minimize memory usage, so keep that in mind if processing large videos
-
-### important note on output_files: 
-output_files needs to be cleared before each fresh run. output_files will be utilizied to load files already marked as duplicates, non-duplicates, or "skipped" files, but if you're testing on new folders, these results can interfere with your current run.
-output_files will be written to at the end of a run or during a run if an exception is encountered
-This is here twice on purpose. 
 
 ### prerequisites:
  - ```sudo apt-get install ffmpeg```
@@ -84,6 +81,6 @@ To fix this, run the program on the originals_folder first, remove duplicates, t
 
 ### important note on numprocess
 
-As of 05/30/2020, I've tested with both 3 processes and 4 processes. 4 processes was a little bit faster but not always. Could have been other things I was doing on the PC.
-However, python creates these processes IN ADDITION to the main running process (which is keeping track of numbers and what to write to files)
-Keep that in mind when determining how many cores/cpus you have. Running multiple processes per CPU won't be faster than running a single process
+ - Python creates these processes IN ADDITION to the main running process (which is keeping track of numbers and what to write to files)  
+ - Keep that in mind when determining how many cores/cpus you have.  
+ - Running multiple processes per CPU won't be faster than running a single process
