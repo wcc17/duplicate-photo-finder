@@ -2,20 +2,28 @@ import sys
 from media_utility import MediaUtility
 from event import Event
 from event_type import EventType
+from multiprocessing import Process
 
-class HashWorker:
+class HashWorker(Process):
 
     _media_utility = None
     _process_id = 0
     _queue = None
+    _file_list = []
 
-    def __init__(self, process_id, queue):
+    def __init__(self, process_id, queue, file_list):
+        super(HashWorker, self).__init__()
+
         self._media_utility = MediaUtility()
         self._process_id = process_id
         self._queue = queue
+        self._file_list = file_list
+    
+    def run(self):
+        self.__execute()
 
-    def execute(self, file_list):
-        for filepath in file_list:
+    def __execute(self):
+        for filepath in self._file_list:
            self.__handle_filepath(filepath)
 
         self.__add_to_queue(EventType.PROCESS_DONE, None)

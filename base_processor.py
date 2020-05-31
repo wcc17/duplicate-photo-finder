@@ -23,23 +23,6 @@ class BaseProcessor:
         sub_lists = numpy.array(sub_lists).tolist()
         return sub_lists
 
-    def _setup_processes(self, target_func, additional_execution_args, sub_lists):
-        process_id = 1
-        for sub_list in sub_lists:
-            args_to_use = (process_id, self._event_queue) # TODO: this is a hack and wouldn't be necessary if workers subclassed Process
-
-            if not additional_execution_args == None:
-                if isinstance(additional_execution_args, tuple):
-                    args_to_use += additional_execution_args
-                else:
-                    args_to_use += (additional_execution_args,)
-
-            args_to_use += (sub_list,)
-
-            process = Process(target=target_func, args=args_to_use)
-            self._process_list.insert(process_id-1, process)
-            process_id += 1
-
     def __kill_processes(self, process_list):
         self._logger.print_log("Terminating all processes")
         for process in process_list:
@@ -65,10 +48,8 @@ class BaseProcessor:
                 pass
 
             if event is not None:
-                #TODO: i want to stop doing this with the arguments its awful
                 args_to_use = (event, num_processed, process_num_processed_list, finished_process_count, total_to_process, self._process_list)
                 args_to_use += event_handler_args
-
 
                 event_return_tuple = event_handler_func(*args_to_use)
 

@@ -16,7 +16,7 @@ class EventHandler:
         for i in range(0, len(process_num_processed_list)):
             #percentage_str = self.__get_progress_percentage_str(process_num_processed_list[i], len(sub_lists[i]))
             is_running_str = "Running" if self._is_process_running(process_list[i]) else "Stopped"
-            output_str += ",    P " + str(i+1) + "(" + is_running_str + ")" + ": " + str(process_num_processed_list[i]) + "/" + str(len(sub_lists[i]))  + " " # + percentage_str + "%" TODO
+            output_str += ",    P" + str(i+1) + "(" + is_running_str + ")" + ": " + str(process_num_processed_list[i]) + "/" + str(len(sub_lists[i]))  + " " # + percentage_str + "%" TODO
 
         sys.stdout.write(output_str + "\r")
         sys.stdout.flush()

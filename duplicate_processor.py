@@ -17,7 +17,7 @@ class DuplicateProcessor(BaseProcessor):
     def process(self, process_count, potential_duplicate_image_models, originals_folder_image_models, known_non_duplicates, known_duplicates, skipped_files, single_folder_dupe_search):
 
         sub_lists = self._split_list_into_n_lists(potential_duplicate_image_models, process_count)
-        self._setup_processes(self.__execute_processor_worker, originals_folder_image_models, sub_lists)
+        self._setup_processes(originals_folder_image_models, sub_lists)
         
         already_processed = len(known_non_duplicates) + len(known_duplicates) + len(skipped_files)
         total_to_process = len(potential_duplicate_image_models) + already_processed
@@ -26,6 +26,11 @@ class DuplicateProcessor(BaseProcessor):
         self._run_processes(total_to_process, self._processor_event_handler.handle_event, (sub_lists, known_duplicates, known_non_duplicates, skipped_files, single_folder_dupe_search))
         self._file_handler.write_output_for_files(known_non_duplicates, known_duplicates, skipped_files)
 
-    def __execute_processor_worker(self, process_id, queue, originals_folder_image_models, duplicate_folder_image_models):
-        duplicate_processor_worker = DuplicateProcessorWorker(process_id, queue)
-        duplicate_processor_worker.execute(duplicate_folder_image_models, originals_folder_image_models)
+    def _setup_processes(self, originals_folder_image_models, sub_lists):
+        process_id = 1
+        for sub_list in sub_lists:
+            args_to_use = (process_id, self._event_queue, sub_list)
+
+            process = DuplicateProcessorWorker(process_id, self._event_queue, sub_list, originals_folder_image_models)
+            self._process_list.insert(process_id-1, process)
+            process_id += 1

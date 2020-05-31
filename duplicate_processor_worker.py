@@ -5,29 +5,39 @@ from logger import Logger
 from event import Event
 from event_type import EventType
 from duplicate_result_model import DuplicateResultModel
+from multiprocessing import Process
 
-class DuplicateProcessorWorker:
+class DuplicateProcessorWorker(Process):
     _rescan_for_duplicates = False
     _omit_known_duplicates = False
     _queue = None
     _total_to_process = 0
     _process_id = 0
+    _potential_duplicate_image_models = []
+    _originals_image_models = []
 
-    def __init__(self, process_id, queue):
+    def __init__(self, process_id, queue, potential_duplicate_image_models, originals_image_models):
+        super(DuplicateProcessorWorker, self).__init__()
+
         self._process_id = process_id
         self._queue = queue
+        self._potential_duplicate_image_models = potential_duplicate_image_models
+        self._originals_image_models = originals_image_models
 
-    def execute(self, potential_duplicate_image_models, originals_image_models):
+    def run(self):
+        self.__execute()
 
-        for potential_duplicate_image_model in potential_duplicate_image_models:
-            matching_originals_model = self.__compare_model_to_originals(potential_duplicate_image_model, originals_image_models)
+    def __execute(self):
+
+        for potential_duplicate_image_model in self._potential_duplicate_image_models:
+            matching_originals_model = self.__compare_model_to_originals(potential_duplicate_image_model)
             self.__handle_comparison_result(potential_duplicate_image_model, matching_originals_model)
         
         self.__add_to_queue(EventType.PROCESS_DONE, None)
 
-    def __compare_model_to_originals(self, image_model, originals_image_models):
+    def __compare_model_to_originals(self, image_model):
         matching_originals_model = None
-        for original_image_model in originals_image_models:
+        for original_image_model in self._originals_image_models:
             
             if self.__compare_models(image_model, original_image_model) == True:
                 matching_originals_model = original_image_model
