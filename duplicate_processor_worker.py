@@ -5,34 +5,34 @@ from logger import Logger
 from event import Event
 from event_type import EventType
 from duplicate_result_model import DuplicateResultModel
-from multiprocessing import Process
+from base_worker import BaseWorker
 
-class DuplicateProcessorWorker(Process):
+class DuplicateProcessorWorker(BaseWorker):
+
     _rescan_for_duplicates = False
     _omit_known_duplicates = False
-    _queue = None
     _total_to_process = 0
-    _process_id = 0
-    _potential_duplicate_image_models = []
     _originals_image_models = []
 
-    def __init__(self, process_id, queue, potential_duplicate_image_models, originals_image_models):
-        super(DuplicateProcessorWorker, self).__init__()
-
-        self._process_id = process_id
-        self._queue = queue
-        self._potential_duplicate_image_models = potential_duplicate_image_models
+    def __init__(self, process_id, queue, potential_duplicate_image_models, originals_image_models, connection):
+        super().__init__(process_id, potential_duplicate_image_models, queue, connection)
         self._originals_image_models = originals_image_models
 
     def run(self):
         self.__execute()
 
     def __execute(self):
-
-        for potential_duplicate_image_model in self._potential_duplicate_image_models:
+        files_to_remove = []
+        for potential_duplicate_image_model in self.file_list:
             matching_originals_model = self.__compare_model_to_originals(potential_duplicate_image_model)
             self.__handle_comparison_result(potential_duplicate_image_model, matching_originals_model)
+            
+            files_to_remove.append(potential_duplicate_image_model)
+            if self._redisperse_message_received():
+                break
         
+        self._clear_already_processed_files(files_to_remove)
+        self._send_filelist_to_main_process()
         self.__add_to_queue(EventType.PROCESS_DONE, None)
 
     def __compare_model_to_originals(self, image_model):
@@ -59,4 +59,4 @@ class DuplicateProcessorWorker(Process):
             self.__add_to_queue(EventType.DUPLICATE, DuplicateResultModel(potential_duplicate_image_model.filepath, matching_originals_model.filepath))
 
     def __add_to_queue(self, event_type, event_data):
-        self._queue.put(Event(event_type, event_data, self._process_id))
+        self._queue.put(Event(event_type, event_data, self.process_id))

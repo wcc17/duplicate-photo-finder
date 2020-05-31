@@ -24,7 +24,8 @@ class HashProcessor(BaseProcessor):
 
         self._logger.print_log("Number of files found in " + folder_name + " to attempt to md5 hash: " + str(num_filepaths) + ". Starting hash process. ")
         sub_lists = self._split_list_into_n_lists(filepaths, process_count)
-        
+        self._two_way_connections = self._setup_connections(process_count)
+
         self._setup_processes(sub_lists)
         self._run_processes(len(filepaths), self._hash_event_handler.handle_event, (image_models, skipped_files, sub_lists, append_to_skipped))
 
@@ -34,6 +35,13 @@ class HashProcessor(BaseProcessor):
     def _setup_processes(self, sub_lists):
         process_id = 1
         for sub_list in sub_lists:
-            process = HashWorker(process_id, self._event_queue, sub_list, self._use_verbose_logging, self._should_check_videos)
+            process = HashWorker(process_id, self._event_queue, sub_list, self._use_verbose_logging, self._should_check_videos, self._two_way_connections[process_id-1].child_connection)
+            
             self._process_list.insert(process_id-1, process)
             process_id += 1
+
+        self._process_num_processed_list = [0] * len(self._process_list)
+
+    def _replace_process(self, process, sub_list):
+        new_process = HashWorker(process.process_id, self._event_queue, sub_list, self._use_verbose_logging, self._should_check_videos, self._two_way_connections[process.process_id-1].child_connection)
+        return new_process
