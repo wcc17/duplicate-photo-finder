@@ -72,5 +72,8 @@ class BaseProcessor:
         for process in self._process_list:
             process.join()
 
+        for process in self._process_list:
+            process.terminate()
+
         self._event_queue.close()
         self._event_queue.join_thread()

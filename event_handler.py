@@ -9,8 +9,8 @@ class EventHandler:
         self._logger = Logger()
         self._use_verbose_logging = use_verbose_logging
 
-    def _write_progress_to_console(self, num_processed, total_to_process, process_num_processed_list, sub_lists, process_list):
-        output_str = "Overall Progress: " + str(num_processed) + "/" + str(total_to_process) + " "
+    def _write_progress_to_console(self, num_processed, total_to_process, process_num_processed_list, sub_lists, process_list, finished_process_count):
+        output_str = "Progress: " + str(num_processed) + "/" + str(total_to_process) + " "
 
         for i in range(0, len(process_num_processed_list)):
             is_running_str = "Running" if self._is_process_running(process_list[i]) else "Stopped"
@@ -18,6 +18,9 @@ class EventHandler:
 
         sys.stdout.write(output_str + "\r")
         sys.stdout.flush()
+
+        if finished_process_count >= len(process_list):
+            print()
     
     def _some_process_is_alive(self, process_list):
         for process in process_list:

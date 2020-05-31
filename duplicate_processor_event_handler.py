@@ -47,5 +47,5 @@ class DuplicateProcessorEventHandler(EventHandler):
         elif event_type == EventType.PROCESS_DONE:
             finished_process_count += 1
 
-        self._write_progress_to_console(num_processed, total_to_process, process_num_processed_list, sub_lists, process_list)
+        self._write_progress_to_console(num_processed, total_to_process, process_num_processed_list, sub_lists, process_list, finished_process_count)
         return (num_processed, finished_process_count)

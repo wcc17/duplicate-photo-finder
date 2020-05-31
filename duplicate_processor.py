@@ -19,10 +19,9 @@ class DuplicateProcessor(BaseProcessor):
         sub_lists = self._split_list_into_n_lists(potential_duplicate_image_models, process_count)
         self._setup_processes(originals_folder_image_models, sub_lists)
         
-        already_processed = len(known_non_duplicates) + len(known_duplicates) + len(skipped_files)
-        total_to_process = len(potential_duplicate_image_models) + already_processed
+        total_to_process = len(potential_duplicate_image_models)
 
-        self._logger.print_log("identifying duplicates")
+        self._logger.print_log("identifying duplicates, progress will not include skipped files")
         self._run_processes(total_to_process, self._processor_event_handler.handle_event, (sub_lists, known_duplicates, known_non_duplicates, skipped_files, single_folder_dupe_search))
         self._file_handler.write_output_for_files(known_non_duplicates, known_duplicates, skipped_files)
 

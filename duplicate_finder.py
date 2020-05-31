@@ -30,10 +30,10 @@ class DuplicateFinder:
             potential_duplicate_image_models = []
             originals_folder_image_models = []
 
-            potential_duplicate_image_models = self._duplicate_hash_processor.process(process_count, duplicates_folder_path, "duplicates folder", self._known_non_duplicates, self._known_duplicates, self._skipped_files, True)
+            potential_duplicate_image_models = self._duplicate_hash_processor.process(process_count, duplicates_folder_path, "duplicates folder", self._skipped_files, True)
             
             if(not single_folder_dupe_search):
-                originals_folder_image_models = self._originals_hash_processor.process(process_count, originals_folder_path, "originals folder", self._known_non_duplicates, self._known_duplicates, self._skipped_files, False)
+                originals_folder_image_models = self._originals_hash_processor.process(process_count, originals_folder_path, "originals folder", self._skipped_files, False)
             else:
                 originals_folder_image_models = potential_duplicate_image_models
 

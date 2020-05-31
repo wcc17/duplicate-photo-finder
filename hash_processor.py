@@ -15,7 +15,7 @@ class HashProcessor(BaseProcessor):
         self._use_verbose_logging = use_verbose_logging
         self._should_check_videos = should_check_videos
 
-    def process(self, process_count, folder_path, folder_name, known_non_duplicates, known_duplicates, skipped_files, append_to_skipped):
+    def process(self, process_count, folder_path, folder_name, skipped_files, append_to_skipped):
         self._process_list = []
         image_models = []
 
