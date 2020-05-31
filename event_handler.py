@@ -16,8 +16,9 @@ class EventHandler:
             is_running_str = "Running" if self._is_process_running(process_list[i]) else "Stopped"
             output_str += ", P" + str(i+1) + "(" + is_running_str + ")" + ": " + str(process_num_processed_list[i]) + "/" + str(len(sub_lists[i]))  + " "
 
-        sys.stdout.write(output_str + "\r")
-        sys.stdout.flush()
+        # sys.stdout.write(output_str + "\r")
+        # sys.stdout.flush()
+        print(output_str)
 
         if finished_process_count >= len(process_list):
             print()

@@ -9,7 +9,7 @@ class HashEventHandler(EventHandler):
     def __init__(self, use_verbose_logging):
         super().__init__(use_verbose_logging)
 
-    def handle_event(self, event, num_processed, process_num_processed_list, finished_process_count, total_to_process, process_list, image_models, skipped_files, sub_lists, append_to_be_skipped):
+    def handle_event(self, event, num_processed, process_num_processed_list, finished_process_count, total_to_process, process_list, sub_lists, image_models, skipped_files, append_to_be_skipped):
         event_process_id = event.event_process_id
         event_data = event.event_data
         event_type = event.event_type

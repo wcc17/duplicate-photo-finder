@@ -87,7 +87,7 @@ def main():
     try:
         run()
     except Exception as e:
-        print(e) #don't use logger for this
+        print(e)
         traceback.print_exc()
         try:
             sys.exit(0)
