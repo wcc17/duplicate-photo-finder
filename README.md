@@ -13,6 +13,9 @@ Python script that compares one set of photos to another to identify duplicates.
     ```http://ffmpeg.org/ffmpeg-all.html#hash```  
 (Let me know if you have a faster way to do this ^)
 
+- Possible updates in future:
+- - Make processes redisperse workload if one process finishes way ahead of others
+- - Find a faster way to has the videos
 
  - Only exact copies (aside from file metadata) are calculated as duplicates
  - **No actions are taken to minimize memory usage, so keep that in mind if processing large videos
