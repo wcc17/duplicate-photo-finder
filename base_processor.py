@@ -59,8 +59,7 @@ class BaseProcessor:
             if finished_process_count >= len(self._process_list):
                 break
 
-        for process in self._process_list:
-            process.join()
+        self.__cleanup()
 
     def __some_process_is_alive(self, process_list):
         for process in process_list:
@@ -68,3 +67,10 @@ class BaseProcessor:
                 return True
         
         return False
+
+    def __cleanup(self):
+        for process in self._process_list:
+            process.join()
+
+        self._event_queue.close()
+        self._event_queue.join_thread()
