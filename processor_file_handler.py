@@ -22,11 +22,6 @@ class ProcessorFileHandler:
         self._output_file_handler.write_output_for_files(known_non_duplicates, known_duplicates, skipped_files)
         self._logger.print_log("information written to output files")
 
-    def handle_processed_duplicates(self, files_list, known_non_duplicates, known_duplicates, skipped_files):
-        self._output_file_handler.remove_already_processed_file_paths_from_list(files_list, self._output_file_handler.get_known_non_duplicates_file_path(), known_non_duplicates)
-        self._output_file_handler.remove_already_processed_file_paths_from_list(files_list, self._output_file_handler.get_known_duplicates_file_path(), known_duplicates)
-        self._output_file_handler.remove_already_processed_file_paths_from_list(files_list, self._output_file_handler.get_skipped_files_file_path(), skipped_files)
-
     def __get_files_list(self, path, folder_name):
         self._logger.print_log("getting " + folder_name + " files list..")
         file_list = []   

@@ -11,15 +11,12 @@ class HashProcessor(BaseProcessor):
         super().__init__(file_handler)
         self._hash_event_handler = HashEventHandler(use_verbose_logging)
 
-    def process(self, process_count, folder_path, folder_name, known_non_duplicates, known_duplicates, skipped_files, process_existing_duplicates, append_to_skipped):
+    def process(self, process_count, folder_path, folder_name, known_non_duplicates, known_duplicates, skipped_files, append_to_skipped):
         self._process_list = []
         image_models = []
 
         filepaths = self._file_handler.get_filepaths(folder_path, folder_name)
         
-        if process_existing_duplicates:
-            self.__process_existing_duplicates(filepaths, known_non_duplicates, known_duplicates, skipped_files)
-
         self._logger.print_log("hashing valid media files from " + folder_name)
         sub_lists = self._split_list_into_n_lists(filepaths, process_count)
         
@@ -28,11 +25,6 @@ class HashProcessor(BaseProcessor):
 
         self._logger.print_log("hashed " + str(len(image_models)) + " media files and skipped: " + str(len(skipped_files)))
         return image_models
-
-    def __process_existing_duplicates(self, filepaths, known_non_duplicates, known_duplicates, skipped_files):
-        self._logger.print_log("sort out duplicates files that have already been marked as processed...")
-        self._file_handler.handle_processed_duplicates(filepaths, known_non_duplicates, known_duplicates, skipped_files)
-        self._logger.print_log("duplicate folder files count after scanning for already processed: " + str(len(filepaths)))
 
     def _setup_processes(self, sub_lists):
         process_id = 1

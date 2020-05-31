@@ -6,7 +6,6 @@ Python script that compares one set of photos to another to identify duplicates.
  - Generates md5 hashes associated to filepaths for each file in folders designated by user.
  - Compares hashes to identify exact duplicates only 
  - Writes the outputs (filepaths of the duplicates, non duplicates, and skipped files) to a text file so that you can handle the duplicates how you want to (instead of relying on another program to do it)
- - Experimental: Can utilize output files to resume a scan if errors are encountered or if the program has to be stopped (see note on output_files, not guarenteed)
 
  - Hashes for images are calculated by getting image bytes from PIL and using hashlib to calculate the hash
  - Hashes for videos are calculated by running the following command with ffmpeg. It converts video and audio to raw video and audio frames and then calculates md5 hash based on those:  
@@ -60,8 +59,8 @@ If these three files already exist in output_files, backups will be created of t
 ```output_folder/skipped_files.txt.BACKUP```  
 
 ## important note on output_files: 
-output_files needs to be cleared before each fresh run. output_files will be utilizied to load files already marked as duplicates, non-duplicates, or "skipped" files, but if you're testing on new folders, these results can interfere with your current run.
-output_files will be written to at the end of a run or during a run if an exception is encountered
+output_files and backup output files will be modified each run. The normal output files will be backed up and then overwritten. Then the process repeats. Backup files you want to keep
+output_files will be written to at the end of a run or during a run if an exception is encountered (writing during exception/shutdown is experimental/not guarenteed)
 
 ## important note on how running on a single duplicates folder works vs. running on a duplicates and originals folder
 In a dual folder search, the results will only contain the first duplicate found. The program is assuming the "originals" folder will already not have duplicates
