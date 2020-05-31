@@ -28,8 +28,6 @@ class DuplicateProcessor(BaseProcessor):
     def _setup_processes(self, originals_folder_image_models, sub_lists):
         process_id = 1
         for sub_list in sub_lists:
-            args_to_use = (process_id, self._event_queue, sub_list)
-
             process = DuplicateProcessorWorker(process_id, self._event_queue, sub_list, originals_folder_image_models)
             self._process_list.insert(process_id-1, process)
             process_id += 1
