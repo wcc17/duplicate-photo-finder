@@ -11,9 +11,11 @@ import re
 class MediaUtility:
 
     _logger = None
+    _use_verbose_logging = False
 
-    def __init__(self):
+    def __init__(self, use_verbose_logging):
         self._logger = Logger()
+        self._use_verbose_logging = use_verbose_logging
         mimetypes.init()
 
     def is_image_file(self, filepath):
@@ -44,7 +46,9 @@ class MediaUtility:
                 return video_model
             
             return None
-        except:
+        except Exception as e:
+            self.__log_message("Exception encountered loading media model for video" + filepath)
+            self.__log_message(str(e))
             return None
 
     def __is_media_file(self, filepath, media_type_str):
@@ -62,7 +66,9 @@ class MediaUtility:
         try:
             image = Image.open(filepath)
             return image
-        except:
+        except Exception as e:
+            self.__log_message("Exception encountered loading image with PIL" + filepath)
+            self.__log_message(str(e))
             return None
 
     def __get_ffmpeg_video_hash(self, filepath):
@@ -85,7 +91,9 @@ class MediaUtility:
         try:
             hash = hashlib.md5(image.tobytes())
             return hash
-        except:
+        except Exception as e:
+            self.__log_message("Exception encountered getting hash for image")
+            self.__log_message(str(e))
             return None
 
     def __is_valid_md5(self, hash):
@@ -94,3 +102,7 @@ class MediaUtility:
             return True
         
         return False
+
+    def __log_message(self, message):
+        if self._use_verbose_logging:
+            self._logger.print_log(message)

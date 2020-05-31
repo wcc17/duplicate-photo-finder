@@ -10,14 +10,16 @@ class HashWorker(Process):
     _process_id = 0
     _queue = None
     _file_list = []
+    _should_check_videos = False
 
-    def __init__(self, process_id, queue, file_list):
+    def __init__(self, process_id, queue, file_list, use_verbose_logging, should_check_videos):
         super(HashWorker, self).__init__()
 
-        self._media_utility = MediaUtility()
+        self._media_utility = MediaUtility(use_verbose_logging)
         self._process_id = process_id
         self._queue = queue
         self._file_list = file_list
+        self._should_check_videos = should_check_videos
     
     def run(self):
         self.__execute()
@@ -31,7 +33,7 @@ class HashWorker(Process):
     def __handle_filepath(self, filepath):
         if self._media_utility.is_image_file(filepath):
             self.__handle_valid_image(filepath)
-        elif self._media_utility.is_video_file(filepath): #TODO: Only check videos if a flag is set
+        elif self._should_check_videos and self._media_utility.is_video_file(filepath):
             self.__handle_valid_video(filepath)
         else:
             self.__handle_no_valid_media_found(filepath)

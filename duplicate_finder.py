@@ -15,16 +15,15 @@ class DuplicateFinder:
     _known_duplicates = []
     _skipped_files = []
 
-    def __init__(self, output_file_path, use_verbose_logging):
+    def __init__(self, output_file_path, use_verbose_logging, should_scan_videos):
         self._file_handler = ProcessorFileHandler(output_file_path)
 
         self._logger = Logger()
-        self._hash_processor = HashProcessor(self._file_handler, use_verbose_logging)
+        self._hash_processor = HashProcessor(self._file_handler, use_verbose_logging, should_scan_videos)
         self._duplicate_processor = DuplicateProcessor(self._file_handler, use_verbose_logging)
 
-    def execute(self, duplicates_folder_path, originals_folder_path, process_count, single_folder_dupe_search, use_verbose_logging, should_scan_videos):
+    def execute(self, duplicates_folder_path, originals_folder_path, process_count, single_folder_dupe_search):
         
-        #TODO: not doing anything yet with use_verbose_logging and should_scan_videos
         try:
             potential_duplicate_image_models = []
             originals_folder_image_models = []

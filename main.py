@@ -34,15 +34,15 @@ def run():
     if(originals_folder_path == None):
         single_folder_dupe_search = True
 
-    duplicate_finder = DuplicateFinder(OUTPUT_DIRECTORY_PATH, use_verbose_logging)
-    duplicate_finder.execute(duplicates_folder_path, originals_folder_path, process_count, single_folder_dupe_search, use_verbose_logging, should_scan_videos)
+    duplicate_finder = DuplicateFinder(OUTPUT_DIRECTORY_PATH, use_verbose_logging, should_scan_videos)
+    duplicate_finder.execute(duplicates_folder_path, originals_folder_path, process_count, single_folder_dupe_search)
 
 def handle_args():
     global duplicates_folder_path
     global originals_folder_path
     global process_count
     global use_verbose_logging
-    global moviescan
+    global should_scan_videos
 
     try:
         opts, args = getopt.getopt(sys.argv[1:], 'hd:o:n:vm', ['duplicates=', 'originals=', 'numprocess=', 'verbose', 'moviescan', 'help'])
@@ -60,7 +60,7 @@ def handle_args():
             elif opt in (VERBOSE_LONG_ARG, VERBOSE_SHORT_ARG):
                 use_verbose_logging = True
             elif opt in (MOVIESCAN_LONG_ARG, MOVIESCAN_SHORT_ARG):
-                moviescan = True
+                should_scan_videos = True
     except:
         usage()
 

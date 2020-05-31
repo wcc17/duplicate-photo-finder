@@ -25,7 +25,6 @@ class HashEventHandler(EventHandler):
                 skipped_files.append(event_data)
             process_num_processed_list[event_process_id-1] += 1
             num_processed += 1
-            #TODO: increase a "files_removed" variable and then log the results outside of this method 
 
         elif event_type == EventType.PROCESS_DONE:
             finished_process_count += 1
