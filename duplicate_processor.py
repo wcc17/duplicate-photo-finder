@@ -19,7 +19,7 @@ class DuplicateProcessor(BaseProcessor):
         self._originals_folder_image_models = originals_folder_image_models
 
         self._sub_lists = self._split_list_into_n_lists(potential_duplicate_image_models, process_count)
-        self._two_way_connections = self._setup_connections(process_count)
+        self._setup_connections(process_count)
         self._setup_processes()
         
         total_to_process = len(potential_duplicate_image_models)

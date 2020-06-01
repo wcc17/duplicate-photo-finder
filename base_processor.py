@@ -16,7 +16,6 @@ class BaseProcessor:
     _finished_process_count = 0
     _should_redisperse = False
     _process_num_processed_list = []
-    _parent_connections = []
     _two_way_connections = []
     _sub_lists = []
 
@@ -39,16 +38,13 @@ class BaseProcessor:
         return sub_lists
 
     def _setup_connections(self, process_count):
-        connections = []
+        self._two_way_connections = []
         for i in range(0, process_count):
             connection = TwoWayConnection()
-            connections.append(connection)
-
-        return connections
+            self._two_way_connections.append(connection)
 
     def _run_processes(self, total_to_process, event_handler_func, event_handler_args):
         continue_processing = True
-        self.__setup_parent_connections()
         self.__start_processes()
 
         while continue_processing:
@@ -89,34 +85,38 @@ class BaseProcessor:
             self._finished_process_count = event_return_tuple[1]
 
     def __start_redisperse_if_applicable(self, total_to_process):
-        minimum_to_trigger_redispurse = len(self._process_list)
+        minimum_to_trigger_redispurse = len(self._process_list) * 4
 
         if (total_to_process - self._num_processed) >= minimum_to_trigger_redispurse:
-            print()
             self._should_redisperse = True
             self.__ask_processes_to_stop_for_redisperse()
 
-            for process in self._process_list:
-                process.join()
-
     def __redisperse(self, total_to_process, event_handler_func, event_handler_args):
         if not self.__some_process_is_alive():
-
+            #get the rest of the events out the queue
             while not self._event_queue.empty():
                 self.__process_event(total_to_process, event_handler_func, event_handler_args)
 
             self._logger.print_log("Redispersing " + str(total_to_process - self._num_processed) + " to account for process that finished before others")
+
+            #get the shortened sub lists from all the processes to be redispersed
             files_to_be_processed = self.__gather_existing_sub_lists()
+
+            #cleanup and then create new connections for the new processes
+            self.__cleanup_connections()
+            self._setup_connections(len(self._process_list))
+            
+            #create new processes and restart
             self.__reset_processes(files_to_be_processed)
             self.__start_processes()
-            self.__ask_processes_to_process()
             self._finished_process_count = 0 
             self._should_redisperse = False
 
     def __gather_existing_sub_lists(self):
         files_to_be_processed = []
         for process in self._process_list:
-            process_file_list = self._parent_connections[process.process_id-1].recv()
+            conn = self._two_way_connections[process.process_id-1].parent_connection
+            process_file_list = conn.recv()
             files_to_be_processed.extend(process_file_list)
 
         return files_to_be_processed
@@ -129,10 +129,6 @@ class BaseProcessor:
 
     def _replace_process(self, process, sub_list):
         return ""
-
-    def __setup_parent_connections(self):
-        for connection in self._two_way_connections:
-            self._parent_connections.append(connection.parent_connection)
 
     def __start_processes(self):
         for process in self._process_list:
@@ -147,22 +143,22 @@ class BaseProcessor:
 
     def __ask_processes_to_stop_for_redisperse(self):
         for process_id in range(0, len(self._process_list)):
-            self._parent_connections[process_id].send("REDISPERSE")
-
-    def __ask_processes_to_process(self):
-        for process_id in range(0, len(self._process_list)):
-            self._parent_connections[process_id].send("")
+            parent_connection =  self._two_way_connections[process_id].parent_connection
+            parent_connection.send("REDISPERSE")
 
     def __cleanup(self):
         for process in self._process_list:
-            process.join()
-
-        for process in self._process_list:
             process.terminate()
 
-        for connection in self._two_way_connections:
-            connection.parent_connection.close()
-            connection.child_connection.close()
+        for process in self._process_list:
+            process.join()
+
+        self.__cleanup_connections()
 
         self._event_queue.close()
         self._event_queue.join_thread()
+
+    def __cleanup_connections(self):
+        for connection in self._two_way_connections:
+            connection.parent_connection.close()
+            connection.child_connection.close()

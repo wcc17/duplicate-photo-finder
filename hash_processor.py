@@ -24,7 +24,7 @@ class HashProcessor(BaseProcessor):
 
         self._logger.print_log("Number of files found in " + folder_name + " to attempt to md5 hash: " + str(num_filepaths) + ". Starting hash process. ")
         self._sub_lists = self._split_list_into_n_lists(filepaths, process_count)
-        self._two_way_connections = self._setup_connections(process_count)
+        self._setup_connections(process_count)
 
         self._setup_processes()
         self._run_processes(len(filepaths), self._hash_event_handler.handle_event, (image_models, skipped_files, append_to_skipped))
