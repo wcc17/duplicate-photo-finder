@@ -42,14 +42,15 @@ class DuplicateFinder:
         except KeyboardInterrupt:
             self._logger.print_log('Interrupted, writing output to files')
             self._file_handler.write_output_for_files(self._known_non_duplicates, self._known_duplicates, self._skipped_files)
-            self._duplicate_hash_processor.kill_processes()
-            self._originals_hash_processor.kill_processes()
-            self._duplicate_processor.kill_processes()
+            self.__kill_all_processes()
             raise
         except Exception:
             self._logger.print_log('Exception occurred, writing output to files')
             self._file_handler.write_output_for_files(self._known_non_duplicates, self._known_duplicates, self._skipped_files)
-            self._duplicate_hash_processor.kill_processes()
-            self._originals_hash_processor.kill_processes()
-            self._duplicate_processor.kill_processes()
+            self.__kill_all_processes()
             raise
+
+    def __kill_all_processes(self):
+        self._duplicate_hash_processor.kill_processes()
+        self._originals_hash_processor.kill_processes()
+        self._duplicate_processor.kill_processes()

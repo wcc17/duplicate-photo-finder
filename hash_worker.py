@@ -28,6 +28,7 @@ class HashWorker(BaseWorker):
             files_to_remove.append(filepath)
             self._print_verbose("processed " + filepath)
 
+        self._logger.print_log("process " + str(self.process_id) + " is finished")
         self._clear_already_processed_files(files_to_remove)
         self.__add_to_queue(EventType.PROCESS_DONE, None)
 

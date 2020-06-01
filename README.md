@@ -1,10 +1,12 @@
 # duplicate-photo-finder
 Python script that compares one set of photos to another to identify duplicates. 
+Although the program makes no changes to your files aside from the output_folder, ### USE THE OUTPUTTED RESULTS AT YOUR OWN RISK!
 
  - Utilizes multiprocessing (default process count is 3) that can be customized by user.   
  
- - Generates md5 hashes associated to filepaths for each file in folders designated by user.
- - Compares hashes to identify exact duplicates only 
+ - Generates md5 hashes associated to filepaths for each file in folders designated by user. Hashes are generated in multiple processes (as specified by the user with --numprocess). 
+ - If one process finishes ahead of the others, the program can redisperse the remaining files to all processes (unless specified otherwise by the user with --redispdisable)
+ - Compares hashes to identify exact duplicates only. Only exact copies of files (aside from file metadata) are identified as duplicates
  - Writes the outputs (filepaths of the duplicates, non duplicates, and skipped files) to a text file so that you can handle the duplicates how you want to (instead of relying on another program to do it)
 
  - Hashes for images are calculated by getting image bytes from PIL and using hashlib to calculate the hash
@@ -13,11 +15,6 @@ Python script that compares one set of photos to another to identify duplicates.
     ```http://ffmpeg.org/ffmpeg-all.html#hash```  
 (Let me know if you have a faster way to do this ^)
 
-- Possible updates in future:
-  - Make processes redisperse workload if one process finishes way ahead of others
-  - Find a faster way to has the videos
-
- - Only exact copies (aside from file metadata) are calculated as duplicates
  - **No actions are taken to minimize memory usage, so keep that in mind if processing large videos
 
 ## prerequisites:
@@ -36,6 +33,7 @@ Python script that compares one set of photos to another to identify duplicates.
  - ```verbose```:    Defaults to False. Include to set to True. Will log each duplicate and nonduplicate as the processes are running
  - ```moviescan```:  Defaults to True. Include to set to False. Can be set to false to disable scanning videos, which will result in only photos being compared for duplicates
  - ```redispdisable```: Enabled by default. During the hashing process, the application will attempt to redisperse all remaining files among processes if one process finishes early unless too few records remain.
+    - NOTE: if redisperse happens, there could be a delay before all processes resume due to any holdouts processing large files
  - ```help```:       See this message
 
 ## output:

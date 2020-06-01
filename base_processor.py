@@ -2,7 +2,7 @@ from multiprocessing import Queue, Manager
 from logger import Logger
 from multiprocessing import Process
 from one_way_connection import OneWayConnection
-from enum import Enum
+from num_processed_model import NumProcessedModel
 import numpy
 
 class BaseProcessor:
@@ -42,6 +42,8 @@ class BaseProcessor:
             self._one_way_connections.append(OneWayConnection())
 
     def _initialize_managed_sublists(self, list, number_of_lists):
+        self._sub_lists = []
+
         sub_lists_array = numpy.array_split(numpy.array(list), number_of_lists)
         sub_lists_list = numpy.array(sub_lists_array).tolist()
 
@@ -52,6 +54,9 @@ class BaseProcessor:
 
     def _run_processes(self, total_to_process, event_handler_func, event_handler_args):
         continue_processing = True
+
+        self._setup_processes()
+        self.__setup_processed_counts()
         self.__start_processes()
 
         while continue_processing:
@@ -83,7 +88,7 @@ class BaseProcessor:
             pass
 
         if event is not None:
-            args_to_use = (event, self._num_processed, self._process_num_processed_list, self._finished_process_count, total_to_process, self._process_list, self._sub_lists)
+            args_to_use = (event, self._num_processed, self._process_num_processed_list, self._finished_process_count, total_to_process, self._process_list)
             args_to_use += event_handler_args
 
             event_return_tuple = event_handler_func(*args_to_use)
@@ -93,7 +98,7 @@ class BaseProcessor:
 
     def __start_redisperse_if_applicable(self, total_to_process):
         if self._enable_redisperse:
-            minimum_to_trigger_redispurse = len(self._process_list) * 8
+            minimum_to_trigger_redispurse = len(self._process_list) * 4
 
             if (total_to_process - self._num_processed) >= minimum_to_trigger_redispurse:
                 self._should_redisperse = True
@@ -109,7 +114,6 @@ class BaseProcessor:
 
             #get the shortened sub lists from all the processes to be redispersed
             files_to_be_processed = self.__gather_existing_sub_lists()
-
             self.__cleanup_connections()
 
             #create new processes and restart
@@ -117,6 +121,7 @@ class BaseProcessor:
             self._finished_process_count = 0 
             self.setup_connections(len(self._sub_lists))
             self.__reset_processes(files_to_be_processed)
+            self.__reset_num_processed_models()
             self.__start_processes()
 
     def __gather_existing_sub_lists(self):
@@ -130,10 +135,6 @@ class BaseProcessor:
         self._initialize_managed_sublists(files_to_be_processed, len(self._process_list))
         for i in range(0, len(self._process_list)):
             self._process_list[i] = self._replace_process(self._process_list[i])
-            self._process_num_processed_list[i] = 0
-
-    def _replace_process(self, process):
-        return ""
 
     def __start_processes(self):
         for process in self._process_list:
@@ -150,6 +151,38 @@ class BaseProcessor:
         for process_id in range(0, len(self._process_list)):
             sending_connection =  self._one_way_connections[process_id].sending_connection
             sending_connection.send("REDISPERSE")
+            self._logger.print_log("sent the redisperse message")
+
+    def __setup_processed_counts(self):
+        self._process_num_processed_list = []
+
+        for sub_list in self._sub_lists:
+            num_processed_model = NumProcessedModel(0, len(sub_list))
+            self._process_num_processed_list.append(num_processed_model)
+
+    def __reset_num_processed_models(self):
+        for i in range(0, len(self._sub_lists)):
+            num_processed_model = self._process_num_processed_list[i]
+            new_sub_list = self._sub_lists[i]
+
+            num_processed_model = NumProcessedModel(num_processed_model.num_processed, (num_processed_model.num_processed + len(new_sub_list)))
+            self._process_num_processed_list[i] = num_processed_model
+
+            #the new total to process should be num_processed + new_total
+            # process1: 1 / 10
+            # process2: 9 / 10
+            # process3: 10 / 10
+            # process4: 5 / 10
+
+            #9 + 1 + 5 remaining = 15 remaining
+            #4, 4, 4, 3 is the new distribution
+
+            # process1: 1 / (1 + 4) == 1 / 5
+            # process2: 9 / (9 + 4) == 9 / 13
+            # process3: 10 / (10 + 4) == 10 / 14
+            # process4: 5 / (5 + 3) == 5 / 8
+
+            # 5 + 13 + 14 + 8 == 40
 
     def __cleanup(self):
         for process in self._process_list:
@@ -162,6 +195,9 @@ class BaseProcessor:
 
         self._event_queue.close()
         self._event_queue.join_thread()
+        self._process_list = []
+        self._process_num_processed_list = []
+        self._sub_lists = []
 
     def __cleanup_connections(self):
         for connection in self._one_way_connections:
@@ -169,3 +205,10 @@ class BaseProcessor:
             connection.sending_connection.close()
 
         self._one_way_connections = []
+
+    def _replace_process(self, process):
+        raise AttributeError("_replace_process should be overriden outside of BaseProcessor")
+
+    def _setup_processes(self):
+        raise AttributeError("_setup_processes should be overriden outside of BaseProcessor")
+    

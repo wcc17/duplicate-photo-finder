@@ -34,6 +34,7 @@ class BaseWorker(Process):
             if self._connection.poll():
                 message = self._connection.recv()
                 if message == "REDISPERSE":
+                    self._logger.print_log("process " + str(self.process_id) + " recieved the message to stop")
                     self._connection.close()
                     return True
 

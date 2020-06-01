@@ -19,7 +19,6 @@ class DuplicateProcessor(BaseProcessor):
         self._originals_folder_image_models = originals_folder_image_models
 
         self._initialize_managed_sublists(potential_duplicate_image_models, process_count)
-        self._setup_processes()
         
         total_to_process = len(potential_duplicate_image_models)
 
@@ -36,8 +35,6 @@ class DuplicateProcessor(BaseProcessor):
             process = DuplicateProcessorWorker(process_id, self._event_queue, sub_list, self._originals_folder_image_models, process_connection, self._use_verbose_logging, self._enable_redisperse)
             self._process_list.insert(process_id-1, process)
             process_id += 1
-
-        self._process_num_processed_list = [0] * len(self._process_list)
 
     def _replace_process(self, process):
         process_connection = self._one_way_connections[process.process_id-1].receiving_connection

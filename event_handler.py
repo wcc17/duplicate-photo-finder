@@ -9,12 +9,12 @@ class EventHandler:
         self._logger = Logger()
         self._use_verbose_logging = use_verbose_logging
 
-    def _write_progress_to_console(self, num_processed, total_to_process, process_num_processed_list, sub_lists, process_list, finished_process_count):
+    def _write_progress_to_console(self, num_processed, total_to_process, process_num_processed_list, process_list, finished_process_count):
         output_str = "Progress: " + str(num_processed) + "/" + str(total_to_process) + " "
 
         for i in range(0, len(process_num_processed_list)):
             is_running_str = "Running" if self._is_process_running(process_list[i]) else "Stopped"
-            output_str += ", P" + str(i+1) + "(" + is_running_str + ")" + ": " + str(process_num_processed_list[i]) + "/" + str(len(sub_lists[i]))  + " "
+            output_str += ", P" + str(i+1) + "(" + is_running_str + ")" + ": " + str(process_num_processed_list[i].num_processed) + "/" + str(process_num_processed_list[i].total_to_process)  + " "
 
         sys.stdout.write(output_str + "\r")
         sys.stdout.flush()

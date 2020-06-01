@@ -49,7 +49,7 @@ def handle_args():
     global enable_redisperse
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'hd:o:n:vmr', ['duplicates=', 'originals=', 'numprocess=', 'verbose', 'moviescan', "redispdisable" 'help'])
+        opts, args = getopt.getopt(sys.argv[1:], 'hd:o:n:vmr', ['duplicates=', 'originals=', 'numprocess=', 'verbose', 'moviescan', "redispdisable", 'help'])
 
         for opt, arg in opts:
             if opt in (HELP_LONG_ARG, HELP_SHORT_ARG):
