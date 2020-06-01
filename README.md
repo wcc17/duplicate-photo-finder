@@ -13,6 +13,9 @@ Python script that compares one set of photos to another to identify duplicates.
     ```http://ffmpeg.org/ffmpeg-all.html#hash```  
 (Let me know if you have a faster way to do this ^)
 
+- Possible updates in future:
+  - Make processes redisperse workload if one process finishes way ahead of others
+  - Find a faster way to has the videos
 
  - Only exact copies (aside from file metadata) are calculated as duplicates
  - **No actions are taken to minimize memory usage, so keep that in mind if processing large videos
@@ -27,7 +30,7 @@ Python script that compares one set of photos to another to identify duplicates.
 ## usage: 
 ```sudo python main.py [-d --duplicates]=FOLDER [-o --originals]=FOLDER [-n --numprocess]=3 [-v --verbose] [-m --moviescan] [-h --help]```
  - ```duplicates```: (Required) the top level directory containing all photos that are possible duplicates of photos located in the master folder
- - - - *to identify duplicates in the same directory, don't use the "originals" argument"
+    - to identify duplicates in the same directory, don't use the "originals" argument"
  - ```originals```:  the top level directory containing all photos that are "master" copies (you don't want to delete these)
  - ```numprocess```: Defaults to 3. the number of python processes created and run to generate hashes and then compare hashes
  - ```verbose```:    Defaults to False. Include to set to True. Will log each duplicate and nonduplicate as the processes are running
