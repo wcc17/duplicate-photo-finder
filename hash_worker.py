@@ -9,8 +9,8 @@ class HashWorker(BaseWorker):
     _media_utility = None
     _should_check_videos = False
 
-    def __init__(self, process_id, queue, file_list, use_verbose_logging, should_check_videos, connection):
-        super().__init__(process_id, file_list, queue, connection, use_verbose_logging)
+    def __init__(self, process_id, queue, file_list, use_verbose_logging, should_check_videos, connection, enable_redisperse):
+        super().__init__(process_id, file_list, queue, connection, use_verbose_logging, enable_redisperse)
 
         self._media_utility = MediaUtility(self._use_verbose_logging)
         self._should_check_videos = should_check_videos

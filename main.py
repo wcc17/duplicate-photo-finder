@@ -19,12 +19,15 @@ VERBOSE_LONG_ARG = "--verbose"
 VERBOSE_SHORT_ARG = "-v"
 MOVIESCAN_LONG_ARG = "--moviescan"
 MOVIESCAN_SHORT_ARG = "-m"
+DISABLE_REDISPERSE_LONG_ARG = "--redispdisable"
+DISABLE_REDISPERSE_SHORT_ARG = "-r"
 
 duplicates_folder_path = None
 originals_folder_path = None
 process_count = 3
 use_verbose_logging = False
 should_scan_videos = False
+enable_redisperse = True
 
 def run():
     create_output_folder()
@@ -34,7 +37,7 @@ def run():
     if(originals_folder_path == None):
         single_folder_dupe_search = True
 
-    duplicate_finder = DuplicateFinder(OUTPUT_DIRECTORY_PATH, use_verbose_logging, should_scan_videos)
+    duplicate_finder = DuplicateFinder(OUTPUT_DIRECTORY_PATH, use_verbose_logging, should_scan_videos, enable_redisperse)
     duplicate_finder.execute(duplicates_folder_path, originals_folder_path, process_count, single_folder_dupe_search)
 
 def handle_args():
@@ -43,9 +46,10 @@ def handle_args():
     global process_count
     global use_verbose_logging
     global should_scan_videos
+    global enable_redisperse
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'hd:o:n:vm', ['duplicates=', 'originals=', 'numprocess=', 'verbose', 'moviescan', 'help'])
+        opts, args = getopt.getopt(sys.argv[1:], 'hd:o:n:vmr', ['duplicates=', 'originals=', 'numprocess=', 'verbose', 'moviescan', "redispdisable" 'help'])
 
         for opt, arg in opts:
             if opt in (HELP_LONG_ARG, HELP_SHORT_ARG):
@@ -61,6 +65,8 @@ def handle_args():
                 use_verbose_logging = True
             elif opt in (MOVIESCAN_LONG_ARG, MOVIESCAN_SHORT_ARG):
                 should_scan_videos = True
+            elif opt in (DISABLE_REDISPERSE_LONG_ARG, DISABLE_REDISPERSE_SHORT_ARG):
+                enable_redisperse = False
     except:
         usage()
 
@@ -69,14 +75,15 @@ def handle_args():
         sys.exit(2)
 
 def usage():
-    print("usage: sudo python main.py [-d --duplicates]=FOLDER [-o --originals]=FOLDER [-n --numprocess]=3 [-v --verbose] [-m --moviescan] [-h --help]")
-    print("     [duplicates]: the top level directory containing all photos that are possible duplicates of photos located in the originals folder")
-    print("                         *to identify duplicates in the same directory, don't use the \"originals\" argument")
-    print("     [originals]:  the top level directory containing all photos that are \"master\" copies (you don't want to delete these)")
-    print("     [numprocess]: Defaults to 3. the number of python processes created and run to generate hashes and then compare hashes")
-    print("     [verbose]:    Defaults to False. Include to set to True. Will log each duplicate and nonduplicate as the processes are running")
-    print("     [moviescan]:  Defaults to False. Include to set to True. Can be set to true to enable scanning videos, which will result in only photos being compared for duplicates (slower)")
-    print("     [help]:       See this message")
+    print("usage: sudo python main.py [-d --duplicates]=FOLDER [-o --originals]=FOLDER [-n --numprocess]=3 [-v --verbose] [-m --moviescan] [--r --redispdisable] [-h --help]")
+    print("     [duplicates]:    the top level directory containing all photos that are possible duplicates of photos located in the originals folder")
+    print("                            *to identify duplicates in the same directory, don't use the \"originals\" argument")
+    print("     [originals]:     the top level directory containing all photos that are \"master\" copies (you don't want to delete these)")
+    print("     [numprocess]:    Defaults to 3. the number of python processes created and run to generate hashes and then compare hashes")
+    print("     [verbose]:       Defaults to False. Include to set to True. Will log each duplicate and nonduplicate as the processes are running")
+    print("     [moviescan]:     Defaults to False. Include to set to True. Can be set to true to enable scanning videos, which will result in only photos being compared for duplicates (slower)")
+    print("     [redispdisable]: Enabled by default. During the hashing process, the application will attempt to redisperse all remaining files among processes if one process finishes early unless too few records remain")
+    print("     [help]:          See this message")
 
 def create_output_folder():
     if not os.path.exists(OUTPUT_DIRECTORY_PATH):

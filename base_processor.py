@@ -18,13 +18,15 @@ class BaseProcessor:
     _sub_lists = []
     _manager = None
     _use_verbose_logging = None
+    _enable_redisperse = False
     
-    def __init__(self, file_handler, use_verbose_logging):
+    def __init__(self, file_handler, use_verbose_logging, enable_redisperse):
         self._logger = Logger()
         self._file_handler = file_handler
         self._event_queue = Queue()
         self._manager = Manager()
         self._use_verbose_logging = use_verbose_logging
+        self._enable_redisperse = enable_redisperse
 
     def kill_processes(self):
         self._logger.print_log("Terminating all processes")
@@ -53,7 +55,7 @@ class BaseProcessor:
         self.__start_processes()
 
         while continue_processing:
-            if(self._should_redisperse):
+            if self._enable_redisperse and self._should_redisperse:
                 self.__redisperse(total_to_process, event_handler_func, event_handler_args)
             else:
                 continue_processing = self.__process(total_to_process, event_handler_func, event_handler_args)
@@ -90,11 +92,12 @@ class BaseProcessor:
             self._finished_process_count = event_return_tuple[1]
 
     def __start_redisperse_if_applicable(self, total_to_process):
-        minimum_to_trigger_redispurse = len(self._process_list)
+        if self._enable_redisperse:
+            minimum_to_trigger_redispurse = len(self._process_list) * 8
 
-        if (total_to_process - self._num_processed) >= minimum_to_trigger_redispurse:
-            self._should_redisperse = True
-            self.__ask_processes_to_stop_for_redisperse()
+            if (total_to_process - self._num_processed) >= minimum_to_trigger_redispurse:
+                self._should_redisperse = True
+                self.__ask_processes_to_stop_for_redisperse()
 
     def __redisperse(self, total_to_process, event_handler_func, event_handler_args):
         if not self.__some_process_is_alive():

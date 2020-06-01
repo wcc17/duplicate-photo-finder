@@ -28,13 +28,14 @@ Python script that compares one set of photos to another to identify duplicates.
  - I tested on Windows using Ubuntu WSL. Running natively on Windows caused weird results with files that were created on macOS and made it difficult to retrieve files behind long directories (Windows has a short limit)
 
 ## usage: 
-```sudo python main.py [-d --duplicates]=FOLDER [-o --originals]=FOLDER [-n --numprocess]=3 [-v --verbose] [-m --moviescan] [-h --help]```
+```sudo python main.py [-d --duplicates]=FOLDER [-o --originals]=FOLDER [-n --numprocess]=3 [-v --verbose] [-m --moviescan] [--r --redispdisable] [-h --help]```
  - ```duplicates```: (Required) the top level directory containing all photos that are possible duplicates of photos located in the master folder
     - to identify duplicates in the same directory, don't use the "originals" argument"
  - ```originals```:  the top level directory containing all photos that are "master" copies (you don't want to delete these)
  - ```numprocess```: Defaults to 3. the number of python processes created and run to generate hashes and then compare hashes
  - ```verbose```:    Defaults to False. Include to set to True. Will log each duplicate and nonduplicate as the processes are running
  - ```moviescan```:  Defaults to True. Include to set to False. Can be set to false to disable scanning videos, which will result in only photos being compared for duplicates
+ - ```redispdisable```: Enabled by default. During the hashing process, the application will attempt to redisperse all remaining files among processes if one process finishes early unless too few records remain.
  - ```help```:       See this message
 
 ## output:

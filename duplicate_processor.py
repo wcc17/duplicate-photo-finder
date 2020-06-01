@@ -11,8 +11,8 @@ class DuplicateProcessor(BaseProcessor):
     _file_handler = None
     _originals_folder_image_models = []
 
-    def __init__(self, file_handler, use_verbose_logging):
-        super().__init__(file_handler, use_verbose_logging)
+    def __init__(self, file_handler, use_verbose_logging, enable_redisperse):
+        super().__init__(file_handler, use_verbose_logging, enable_redisperse)
         self._processor_event_handler = DuplicateProcessorEventHandler(use_verbose_logging)
 
     def process(self, process_count, potential_duplicate_image_models, originals_folder_image_models, known_non_duplicates, known_duplicates, skipped_files, single_folder_dupe_search):
@@ -33,7 +33,7 @@ class DuplicateProcessor(BaseProcessor):
         process_id = 1
         for sub_list in self._sub_lists:
             process_connection = self._one_way_connections[process_id-1].receiving_connection
-            process = DuplicateProcessorWorker(process_id, self._event_queue, sub_list, self._originals_folder_image_models, process_connection, self._use_verbose_logging)
+            process = DuplicateProcessorWorker(process_id, self._event_queue, sub_list, self._originals_folder_image_models, process_connection, self._use_verbose_logging, self._enable_redisperse)
             self._process_list.insert(process_id-1, process)
             process_id += 1
 
@@ -41,5 +41,5 @@ class DuplicateProcessor(BaseProcessor):
 
     def _replace_process(self, process):
         process_connection = self._one_way_connections[process.process_id-1].receiving_connection
-        new_process = DuplicateProcessorWorker(process.process_id, self._event_queue, self._sub_lists[process.process_id-1], self._originals_folder_image_models, process_connection, self._use_verbose_logging)
+        new_process = DuplicateProcessorWorker(process.process_id, self._event_queue, self._sub_lists[process.process_id-1], self._originals_folder_image_models, process_connection, self._use_verbose_logging, self._enable_redisperse)
         return new_process

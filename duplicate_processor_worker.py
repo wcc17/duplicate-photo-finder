@@ -14,8 +14,8 @@ class DuplicateProcessorWorker(BaseWorker):
     _total_to_process = 0
     _originals_image_models = []
 
-    def __init__(self, process_id, queue, potential_duplicate_image_models, originals_image_models, connection, use_verbose_logging):
-        super().__init__(process_id, potential_duplicate_image_models, queue, connection, use_verbose_logging)
+    def __init__(self, process_id, queue, potential_duplicate_image_models, originals_image_models, connection, use_verbose_logging, enable_redisperse):
+        super().__init__(process_id, potential_duplicate_image_models, queue, connection, use_verbose_logging, enable_redisperse)
         self._originals_image_models = originals_image_models
 
     def run(self):
