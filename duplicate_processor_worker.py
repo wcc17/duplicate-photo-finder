@@ -14,8 +14,8 @@ class DuplicateProcessorWorker(BaseWorker):
     _total_to_process = 0
     _originals_image_models = []
 
-    def __init__(self, process_id, queue, potential_duplicate_image_models, originals_image_models, connection):
-        super().__init__(process_id, potential_duplicate_image_models, queue, connection)
+    def __init__(self, process_id, queue, potential_duplicate_image_models, originals_image_models, connection, use_verbose_logging):
+        super().__init__(process_id, potential_duplicate_image_models, queue, connection, use_verbose_logging)
         self._originals_image_models = originals_image_models
 
     def run(self):
@@ -32,7 +32,6 @@ class DuplicateProcessorWorker(BaseWorker):
                 break
         
         self._clear_already_processed_files(files_to_remove)
-        self._send_filelist_to_main_process()
         self.__add_to_queue(EventType.PROCESS_DONE, None)
 
     def __compare_model_to_originals(self, image_model):

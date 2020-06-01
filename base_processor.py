@@ -1,10 +1,9 @@
-from multiprocessing import Queue
+from multiprocessing import Queue, Manager
 from logger import Logger
 from multiprocessing import Process
-from two_way_connection import TwoWayConnection
+from one_way_connection import OneWayConnection
 from enum import Enum
 import numpy
-
 
 class BaseProcessor:
 
@@ -16,13 +15,16 @@ class BaseProcessor:
     _finished_process_count = 0
     _should_redisperse = False
     _process_num_processed_list = []
-    _two_way_connections = []
     _sub_lists = []
-
-    def __init__(self, file_handler):
+    _manager = None
+    _use_verbose_logging = None
+    
+    def __init__(self, file_handler, use_verbose_logging):
         self._logger = Logger()
         self._file_handler = file_handler
         self._event_queue = Queue()
+        self._manager = Manager()
+        self._use_verbose_logging = use_verbose_logging
 
     def kill_processes(self):
         self._logger.print_log("Terminating all processes")
@@ -32,25 +34,29 @@ class BaseProcessor:
         self._process_list = []
         self._logger.print_log("Terminated " + str(len(self._process_list)) + " processes")
 
-    def _split_list_into_n_lists(self, list, number_of_lists):
-        sub_lists = numpy.array_split(numpy.array(list), number_of_lists)
-        sub_lists = numpy.array(sub_lists).tolist()
-        return sub_lists
-
-    def _setup_connections(self, process_count):
-        self._two_way_connections = []
+    def setup_connections(self, process_count):
+        self._one_way_connections = []
         for i in range(0, process_count):
-            connection = TwoWayConnection()
-            self._two_way_connections.append(connection)
+            self._one_way_connections.append(OneWayConnection())
+
+    def _initialize_managed_sublists(self, list, number_of_lists):
+        sub_lists_array = numpy.array_split(numpy.array(list), number_of_lists)
+        sub_lists_list = numpy.array(sub_lists_array).tolist()
+
+        for i in range(0, len(sub_lists_list)):
+            sub_lists_list[i] = self._manager.list(sub_lists_list[i])
+
+        self._sub_lists = sub_lists_list
 
     def _run_processes(self, total_to_process, event_handler_func, event_handler_args):
         continue_processing = True
         self.__start_processes()
 
         while continue_processing:
-            continue_processing = self.__process(total_to_process, event_handler_func, event_handler_args)
             if(self._should_redisperse):
                 self.__redisperse(total_to_process, event_handler_func, event_handler_args)
+            else:
+                continue_processing = self.__process(total_to_process, event_handler_func, event_handler_args)
 
         self.__cleanup()
 
@@ -63,7 +69,6 @@ class BaseProcessor:
 
         if self._finished_process_count > 0:
             self.__start_redisperse_if_applicable(total_to_process)
-            
             return True
 
         return True
@@ -85,7 +90,7 @@ class BaseProcessor:
             self._finished_process_count = event_return_tuple[1]
 
     def __start_redisperse_if_applicable(self, total_to_process):
-        minimum_to_trigger_redispurse = len(self._process_list) * 4
+        minimum_to_trigger_redispurse = len(self._process_list)
 
         if (total_to_process - self._num_processed) >= minimum_to_trigger_redispurse:
             self._should_redisperse = True
@@ -102,32 +107,29 @@ class BaseProcessor:
             #get the shortened sub lists from all the processes to be redispersed
             files_to_be_processed = self.__gather_existing_sub_lists()
 
-            #cleanup and then create new connections for the new processes
             self.__cleanup_connections()
-            self._setup_connections(len(self._process_list))
-            
+
             #create new processes and restart
+            self._should_redisperse = False
+            self._finished_process_count = 0 
+            self.setup_connections(len(self._sub_lists))
             self.__reset_processes(files_to_be_processed)
             self.__start_processes()
-            self._finished_process_count = 0 
-            self._should_redisperse = False
 
     def __gather_existing_sub_lists(self):
         files_to_be_processed = []
-        for process in self._process_list:
-            conn = self._two_way_connections[process.process_id-1].parent_connection
-            process_file_list = conn.recv()
-            files_to_be_processed.extend(process_file_list)
+        for sub_list in self._sub_lists:
+            files_to_be_processed.extend(sub_list)
 
         return files_to_be_processed
 
     def __reset_processes(self, files_to_be_processed):
-        self._sub_lists = self._split_list_into_n_lists(files_to_be_processed, len(self._process_list))
+        self._initialize_managed_sublists(files_to_be_processed, len(self._process_list))
         for i in range(0, len(self._process_list)):
-            self._process_list[i] = self._replace_process(self._process_list[i], self._sub_lists[i])
+            self._process_list[i] = self._replace_process(self._process_list[i])
             self._process_num_processed_list[i] = 0
 
-    def _replace_process(self, process, sub_list):
+    def _replace_process(self, process):
         return ""
 
     def __start_processes(self):
@@ -143,8 +145,8 @@ class BaseProcessor:
 
     def __ask_processes_to_stop_for_redisperse(self):
         for process_id in range(0, len(self._process_list)):
-            parent_connection =  self._two_way_connections[process_id].parent_connection
-            parent_connection.send("REDISPERSE")
+            sending_connection =  self._one_way_connections[process_id].sending_connection
+            sending_connection.send("REDISPERSE")
 
     def __cleanup(self):
         for process in self._process_list:
@@ -159,6 +161,8 @@ class BaseProcessor:
         self._event_queue.join_thread()
 
     def __cleanup_connections(self):
-        for connection in self._two_way_connections:
-            connection.parent_connection.close()
-            connection.child_connection.close()
+        for connection in self._one_way_connections:
+            connection.receiving_connection.close()
+            connection.sending_connection.close()
+
+        self._one_way_connections = []

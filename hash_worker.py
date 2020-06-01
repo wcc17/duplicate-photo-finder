@@ -10,9 +10,9 @@ class HashWorker(BaseWorker):
     _should_check_videos = False
 
     def __init__(self, process_id, queue, file_list, use_verbose_logging, should_check_videos, connection):
-        super().__init__(process_id, file_list, queue, connection)
+        super().__init__(process_id, file_list, queue, connection, use_verbose_logging)
 
-        self._media_utility = MediaUtility(use_verbose_logging)
+        self._media_utility = MediaUtility(self._use_verbose_logging)
         self._should_check_videos = should_check_videos
     
     def run(self):
@@ -26,9 +26,9 @@ class HashWorker(BaseWorker):
 
             self.__handle_filepath(filepath)
             files_to_remove.append(filepath)
+            self._print_verbose("processed " + filepath)
 
         self._clear_already_processed_files(files_to_remove)
-        self._send_filelist_to_main_process()
         self.__add_to_queue(EventType.PROCESS_DONE, None)
 
     def __handle_filepath(self, filepath):
