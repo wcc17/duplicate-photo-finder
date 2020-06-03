@@ -1,44 +1,40 @@
-from multiprocessing import Queue
+from multiprocessing import Queue, Pool, Manager, Process
 from logger import Logger
-from multiprocessing import Process
-import numpy
 
 class BaseProcessor:
 
     _logger = None
     _file_handler = None
     _process_list = []
+    _manager = None
     _event_queue = None
+    _task_queue = None
+    _process_count = 0
 
-    def __init__(self, file_handler):
-        self._logger = Logger()
+    def __init__(self, file_handler, process_count):
         self._file_handler = file_handler
-        self._event_queue = Queue()
+        self._process_count = process_count
+        
+        self._logger = Logger()
+        self._manager = Manager()
+        self._event_queue = self._manager.Queue()
+        self._task_queue = self._manager.Queue()
 
-    def kill_processes(self):
-        self.__kill_processes(self._process_list)
+    def _get_process(self, process_id):
+        raise AttributeError("not supported")
 
-    def _split_list_into_n_lists(self, list, number_of_lists):
-        sub_lists = numpy.array_split(numpy.array(list), number_of_lists)
-        sub_lists = numpy.array(sub_lists).tolist()
-        return sub_lists
-
-    def __kill_processes(self, process_list):
-        self._logger.print_log("Terminating all processes")
-        for process in process_list:
-            process.terminate()
-            process.join()
-        self._process_list = []
-        self._logger.print_log("Terminated " + str(len(process_list)) + " processes")
-
-    def _run_processes(self, total_to_process, event_handler_func, event_handler_args):
+    def _run_processes(self, filepaths, event_handler_func, event_handler_args):
         num_processed = 0
-        process_num_processed_list = []
-        process_num_processed_list = [0] * len(self._process_list)
-        finished_process_count = 0
+        total_to_process = len(filepaths)
 
-        for process in self._process_list:
+        processes = []
+        for i in range(self._process_count):
+            process = self._get_process(i)
+            processes.append(process)
             process.start()
+
+        for filepath in filepaths:
+            self._task_queue.put(filepath)
 
         while True:
             event = None
@@ -48,32 +44,16 @@ class BaseProcessor:
                 pass
 
             if event is not None:
-                args_to_use = (event, num_processed, process_num_processed_list, finished_process_count, total_to_process, self._process_list)
+                args_to_use = (event, num_processed, total_to_process)
                 args_to_use += event_handler_args
 
-                event_return_tuple = event_handler_func(*args_to_use)
+                num_processed = event_handler_func(*args_to_use)
 
-                num_processed = event_return_tuple[0]
-                finished_process_count = event_return_tuple[1]
-
-            if finished_process_count >= len(self._process_list):
+            if num_processed >= total_to_process:
                 break
 
-        self.__cleanup()
+        for i in range(self._process_count * 2):
+            self._task_queue.put(-1)
 
-    def __some_process_is_alive(self, process_list):
-        for process in process_list:
-            if process.is_alive():
-                return True
-        
-        return False
-
-    def __cleanup(self):
-        for process in self._process_list:
+        for process in processes:
             process.join()
-
-        for process in self._process_list:
-            process.terminate()
-
-        self._event_queue.close()
-        self._event_queue.join_thread()

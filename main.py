@@ -34,8 +34,8 @@ def run():
     if(originals_folder_path == None):
         single_folder_dupe_search = True
 
-    duplicate_finder = DuplicateFinder(OUTPUT_DIRECTORY_PATH, use_verbose_logging, should_scan_videos)
-    duplicate_finder.execute(duplicates_folder_path, originals_folder_path, process_count, single_folder_dupe_search)
+    duplicate_finder = DuplicateFinder(OUTPUT_DIRECTORY_PATH, use_verbose_logging, should_scan_videos, process_count)
+    duplicate_finder.execute(duplicates_folder_path, originals_folder_path, single_folder_dupe_search)
 
 def handle_args():
     global duplicates_folder_path
