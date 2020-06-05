@@ -14,6 +14,7 @@ class HashWorker(Process):
     _file_list = []
     _should_check_videos = False
     _logger = None
+    _use_verbose_logging = False
 
     def __init__(self, process_id, use_verbose_logging, should_check_videos, event_queue, task_queue):
         super(HashWorker, self).__init__()
@@ -24,6 +25,7 @@ class HashWorker(Process):
         self._should_check_videos = should_check_videos
         self._event_queue = event_queue
         self._task_queue = task_queue
+        self._use_verbose_logging = use_verbose_logging
     
     def run(self):
         self.__execute()
@@ -35,11 +37,10 @@ class HashWorker(Process):
             if(filepath == -1):
                 break
             elif isinstance(filepath, str):
-                self._logger.print_log(str(self._process_id) + ": processing filepath " + filepath)
+                self.__log_verbose(str(self._process_id) + ": processing filepath " + filepath)
                 self.__handle_filepath(filepath)
-                self.__add_to_queue(EventType.PROCESS_DONE, None)
             else:
-                self._logger.print_log(str(self._process_id) + ": picked up something strange from the queue")
+                self._logger.print_log(str(self._process_id) + " picked up something strange from the queue" + str(filepath))
 
     def __handle_filepath(self, filepath):
         if self._media_utility.is_image_file(filepath):
@@ -68,3 +69,7 @@ class HashWorker(Process):
 
     def __add_to_queue(self, event_type, event_data):
         self._event_queue.put(Event(event_type, event_data, self._process_id))
+    
+    def __log_verbose(self, message):
+        if self._use_verbose_logging == True:
+            self._logger.print_log(message)

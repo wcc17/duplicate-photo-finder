@@ -1,7 +1,7 @@
 # duplicate-photo-finder
 Python script that compares one set of photos to another to identify duplicates. 
 
- - Utilizes multiprocessing (default process count is 3) that can be customized by user.   
+ - Utilizes multiprocessing (DEFAULT PROCESS COUNT IS 3) that can be customized by user.   
  
  - Generates md5 hashes associated to filepaths for each file in folders designated by user.
  - Compares hashes to identify exact duplicates only 
@@ -14,8 +14,7 @@ Python script that compares one set of photos to another to identify duplicates.
 (Let me know if you have a faster way to do this ^)
 
 - Possible updates in future:
-  - Make processes redisperse workload if one process finishes way ahead of others
-  - Find a faster way to has the videos
+  - Find a faster way to hash the videos
 
  - Only exact copies (aside from file metadata) are calculated as duplicates
  - **No actions are taken to minimize memory usage, so keep that in mind if processing large videos
@@ -33,7 +32,7 @@ Python script that compares one set of photos to another to identify duplicates.
     - to identify duplicates in the same directory, don't use the "originals" argument"
  - ```originals```:  the top level directory containing all photos that are "master" copies (you don't want to delete these)
  - ```numprocess```: Defaults to 3. the number of python processes created and run to generate hashes and then compare hashes
- - ```verbose```:    Defaults to False. Include to set to True. Will log each duplicate and nonduplicate as the processes are running
+ - ```verbose```:    Defaults to False. Include to set to True. Will log each duplicate and nonduplicate as the processes are running (sort of breaks the progress message)
  - ```moviescan```:  Defaults to True. Include to set to False. Can be set to false to disable scanning videos, which will result in only photos being compared for duplicates
  - ```help```:       See this message
 
@@ -90,4 +89,3 @@ To fix this, run the program on the originals_folder first, remove duplicates, t
 
  - Python creates these processes IN ADDITION to the main running process (which is keeping track of numbers and what to write to files)  
  - Keep that in mind when determining how many cores/cpus you have.  
- - Running multiple processes per CPU won't be faster than running a single process

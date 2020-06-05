@@ -74,7 +74,7 @@ def usage():
     print("                         *to identify duplicates in the same directory, don't use the \"originals\" argument")
     print("     [originals]:  the top level directory containing all photos that are \"master\" copies (you don't want to delete these)")
     print("     [numprocess]: Defaults to 3. the number of python processes created and run to generate hashes and then compare hashes")
-    print("     [verbose]:    Defaults to False. Include to set to True. Will log each duplicate and nonduplicate as the processes are running")
+    print("     [verbose]:    Defaults to False. Include to set to True. Will log each duplicate and nonduplicate as the processes are running (sort of breaks the progress message)")
     print("     [moviescan]:  Defaults to False. Include to set to True. Can be set to true to enable scanning videos, which will result in only photos being compared for duplicates (slower)")
     print("     [help]:       See this message")
 
